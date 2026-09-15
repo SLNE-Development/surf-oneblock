@@ -1,0 +1,53 @@
+---
+id: multiblock-logistics
+title: Transport & Logistik
+summary: Items von Maschine zu Maschine bewegen — ohne dass jede Röhre den Server kostet.
+status: spec
+pillar: multiblock
+release: v1
+order: 430
+updated: 2026-09-13
+depends_on: [multiblock-engine, multiblock-machines]
+tags: [multiblock, performance]
+---
+
+## Grundsatz
+
+Röhren sind **keine Entities und werden nicht getickt**. Sie definieren Topologie, nicht Bewegung. Was der Spieler als wandernde Items sieht, ist eine Darstellung; buchhalterisch findet ein Transfer zwischen zwei Endpunkten statt.
+
+Das ist die Bedingung, unter der <Ref id="adr-004-logistics" /> überhaupt getroffen wurde.
+
+## Modell
+
+```
+Netz = { Quellen, Senken, Verbindungen }
+
+pro Netz-Tick (nicht pro Röhre, nicht pro Item):
+  für jede Quelle mit Ausgabe:
+     passende Senke mit Platz suchen (vorberechnete Nachbarschaft)
+     min(Ausgabe, Platz, Durchsatz) übertragen
+```
+
+Die Zuordnung Quelle→Senke wird beim Bauen einmal berechnet und gecacht. Der Tick ist danach eine Schleife über wenige Paare, keine Pfadsuche.
+
+## Netz-Tick
+
+Ein Netz tickt nicht jeden Server-Tick, sondern alle *n* Ticks — abhängig von der Durchsatzstufe der Röhren. Eine einfache Röhre alle 20 Ticks, eine hochwertige alle 4. Das ist gleichzeitig das Upgrade-Erlebnis für den Spieler und der Performance-Hebel für uns.
+
+## Darstellung
+
+Wandernde Items werden als Anzeige-Elemente interpoliert, mit Obergrenze pro Insel und Sichtweite. Bei zu vielen Transfers wird die Anzeige ausgedünnt — nicht der Transfer. Die Buchhaltung stimmt immer, die Optik ist verhandelbar.
+
+## In V1 und danach
+
+| V1 | Röhren, Richtung, Durchsatzstufen, Puffer |
+| --- | --- |
+| V1.x | Filter, Sortierung, Prioritäten |
+| V2 | Logistiknetzwerke, Anforderungen, Terminals |
+
+Bewusst so geschnitten: V1 reicht für eine Kette, nicht für eine Fabrik.
+
+<Note type="error" title="Freigabebedingung">
+  Vor der Freigabe muss ein Lasttest zeigen, dass 50 Inseln mit je 100 Maschinen und aktiven Netzen
+  im Tick-Budget bleiben. Ohne diesen Nachweis geht das Feature nicht live, auch nicht zu 10 %.
+</Note>

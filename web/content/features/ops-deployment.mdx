@@ -1,0 +1,51 @@
+---
+id: ops-deployment
+title: Deployment & Umgebungen
+summary: Wie Services und Gameplay-Server gebaut, ausgeliefert und aktualisiert werden.
+status: draft
+pillar: ops
+release: v1
+order: 700
+updated: 2026-09-14
+depends_on: [platform-feature-flags]
+uses: [surf-microservice]
+tags: [betrieb, ci]
+---
+
+## Umgebungen
+
+| Umgebung | Zweck | Daten |
+| --- | --- | --- |
+| lokal | Entwicklung | Testcontainers |
+| Staging | Integration, alle Flags an | eigene, regelmäßig zurückgesetzt |
+| Produktion | Livebetrieb | echt |
+
+Staging mit allen Flags an ist der Ort, an dem Features aufeinandertreffen, bevor sie es in Produktion tun.
+
+## Artefakte
+
+Jeder Service und jeder Gameplay-Server ist ein eigenes Docker-Image, selbst gehostet auf Coolify — wie im übrigen Stack. Images sind unveränderlich und über den Commit-Hash eindeutig.
+
+## Aktualisierung von Gameplay-Servern
+
+Der heikle Teil: Auf einem Gameplay-Server spielen Leute.
+
+```
+neuer Server startet, nimmt keine Spieler an
+alter Server nimmt keine neuen Spieler mehr an
+Inseln werden nach Leerlauf nicht neu geladen, sondern auf dem neuen zugewiesen
+verbleibende Spieler werden mit Vorwarnung verschoben
+alter Server flusht alles und beendet sich
+```
+
+Das dauert länger als ein Neustart und kostet niemanden seinen Fortschritt.
+
+## Datenbank-Migrationen
+
+Migrationen laufen **vor** dem Deploy und müssen abwärtskompatibel sein: Der alte Code muss mit dem neuen Schema noch laufen, sonst ist ein Rollback unmöglich. Spalten werden hinzugefügt und erst im übernächsten Deploy entfernt.
+
+## Rückwärts
+
+Ein Rollback ist ein Image-Wechsel. Feature-Flags sind der schnellere Weg, siehe <Ref id="platform-feature-flags" /> — erst Flag aus, dann in Ruhe analysieren.
+
+<Open>Wie viele Gameplay-Server zum Start? Hängt an <Ref id="adr-001-world-hosting" /> und an der erwarteten Spielerzahl.</Open>

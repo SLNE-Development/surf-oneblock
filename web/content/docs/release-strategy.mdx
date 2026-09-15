@@ -1,0 +1,67 @@
+---
+id: release-strategy
+title: Release-Strategie
+summary: Wie aus vier großen Säulen eine Folge kleiner, einzeln auslieferbarer Schritte wird.
+status: draft
+updated: 2026-09-13
+order: 40
+tags: [rollout, feature-flags]
+---
+
+## Das Problem mit "alles in V1"
+
+Alle vier Säulen sollen zum Launch da sein. Der naheliegende Fehler ist, sie als vier große Blöcke zu planen und erst am Ende zu integrieren — dann steht drei Monate nichts Spielbares, und die Verzahnung zwischen Wirtschaft und RPG (das eigentliche Feature, siehe <Ref id="vision" />) fällt hinten runter.
+
+Deshalb: **V1 ist ein vertikaler Schnitt durch alle vier Säulen, keine vollständige Säule.**
+
+## Die Ausbaustufen
+
+| Säule | V1 (Launch) | V1.x (nachliefern) | V2 |
+| --- | --- | --- | --- |
+| OneBlock | Block, Phasen, Loot, Insel | Block-Prestige, Events | Saison-Phasen |
+| Inseln | Presets, Platzierung, Rechte | Besuche, Bewertungen | Inselthemen |
+| Clans | Clan-Insel, Rollen, Clan-Level | Wochenziele, Clan-Lager | Clan-Kriege |
+| Multiblocks | Maschinen, Rezepte, Energie, Röhren | Filter, Sortiernetze | Automatisierung 2. Ordnung |
+| RPG | Stats, Damage, 4 Skills, Items, Mobs | Dungeons, Fähigkeiten | Klassen, Raids |
+| Wirtschaft | Währung, Shop, Auktionshaus | Bazaar-Orderbuch | Handelsverträge |
+
+Jede Zeile ist für sich spielbar. Wer nur V1 spielt, hat einen vollständigen Loop — nur einen kürzeren.
+
+## Wie ausgeliefert wird
+
+Jedes Feature geht **deaktiviert** in Produktion und wird per Flag scharf geschaltet — nicht per Deploy. Der Unterschied ist wichtig: Ein Rollback per Flag dauert Sekunden, ein Rollback per Deploy Minuten und trifft alles andere mit.
+
+```
+ merge → Staging (alle Flags an) → Produktion (Flag aus)
+       → Team-Test auf Produktion (Flag für Staff an)
+       → 10 % der Spieler → 100 %
+```
+
+Details zum Mechanismus in <Ref id="platform-feature-flags" />.
+
+## Reihenfolge innerhalb von V1
+
+Die Reihenfolge ergibt sich aus den Abhängigkeiten, nicht aus dem Bauchgefühl. Drei Dinge müssen sehr früh stehen, weil fast alles andere darauf aufsetzt:
+
+1. <Ref id="platform-module-spi" /> — sonst entstehen Module, die sich nicht mehr trennen lassen.
+2. <Ref id="platform-registry" /> — sonst definiert jedes Modul Items auf eigene Weise.
+3. <Ref id="rpg-stats" /> — sonst rechnet später jedes Modul mit anderen Zahlen.
+
+<Note type="warning" title="Der teuerste Fehler">
+  <Ref id="rpg-damage" /> nachträglich einzuziehen bedeutet, jedes Mob, jedes Item und jede Fähigkeit
+  neu zu balancen. Entweder es ist von Anfang an da, oder es kommt gar nicht. Siehe
+  <Ref id="adr-003-damage-system" />.
+</Note>
+
+## Was ein Feature "fertig" macht
+
+Ein Feature gilt erst als fertig, wenn es alle sechs Punkte erfüllt:
+
+1. Funktioniert mit deaktiviertem Flag (Modus startet, nichts bricht).
+2. Hat Tests — mindestens die Rechenlogik als Unit-Test.
+3. Hat Telemetrie: man sieht in Grafana, ob es benutzt wird.
+4. Hat Admin-Werkzeuge: man kann den Zustand eines Spielers ansehen und korrigieren.
+5. Hat Texte in der englischen Quellsprache, deutsch übersetzt.
+6. Hat eine Seite in dieser Doku, die dem Stand entspricht.
+
+Punkt 4 wird gern vergessen und ist der, der später im Support die meiste Zeit kostet.

@@ -1,0 +1,46 @@
+---
+id: adr-002-service-cut
+title: ADR-002 — Was wird eigener Service?
+summary: Vorschlag für die Grenze zwischen Microservice und SPI-Modul, mit dem Kriterium dahinter. Zur Diskussion im Team.
+status: draft
+updated: 2026-09-14
+order: 2
+uses: [surf-microservice, surf-database-r2dbc]
+tags: [architektur, microservices, spi]
+---
+
+## Kontext
+
+Alle Systeme des Teams sind SPI- und Microservice-basiert. Die Frage ist nicht *ob*, sondern *wo* die Schnitte liegen. Ein zu breiter Schnitt macht jedes Block-Break zu einem Netzwerk-Call; ein zu schmaler Schnitt führt zu einem Monolithen, den sechs Entwickler nicht parallel deployen können.
+
+## Vorgeschlagenes Kriterium
+
+> Ein Zustand gehört in einen Service, wenn **mehr als ein Gameplay-Prozess** ihn gleichzeitig korrekt sehen muss. Ein Verhalten gehört in ein Modul, wenn es **pro Tick oder pro Spieleraktion** ausgeführt wird.
+
+Beides zusammen ergibt für die meisten Domänen dieselbe Antwort. Wo es auseinanderfällt — Skills zum Beispiel — wird die Domäne aufgeteilt: Das Modul rechnet im RAM, der Service persistiert.
+
+## Vorgeschlagener Schnitt
+
+| Domäne | Service | Modul | Begründung |
+| --- | --- | --- | --- |
+| Spielerprofil | `identity` | — | Jeder Prozess liest es, selten geschrieben |
+| Inseln & Zuweisung | `island` | Insel-Modul | Zuweisung muss global eindeutig sein |
+| Clans | `clan` (Adapter) | Clan-Modul | System existiert bereits |
+| Wirtschaft | `economy` | Shop-GUI | Doppelbuchung ist inakzeptabel |
+| Skills, Collections, Quests | `progression` | Rechen-Module | Getrennt: RAM rechnet, Service speichert |
+| Item-/Rezept-Definitionen | — | Registry-Modul | Liegen im Code, siehe <Ref id="adr-005-content-source" /> |
+| OneBlock, Multiblocks, Damage | — | Module | Tick-nah, kein Netzwerk erlaubt |
+
+Ausführlich mit Datenfluss in <Ref id="architecture" />.
+
+## Was dagegen spricht
+
+Der ehrliche Gegenpunkt: Fünf Services sind fünf Deployments, fünf Healthchecks, fünf Stellen für Migrationen. Bei einem Team von sechs Entwicklern ist das tragbar, aber nicht umsonst. Wer weniger Betriebsaufwand will, kann `progression` in `identity` ziehen — das wären vier Services, ohne die Regel oben zu verletzen.
+
+Der Rahmen dafür steht: [surf-microservice](https://github.com/SLNE-Development/surf-microservice) liefert das Service-Gerüst, [surf-database-r2dbc](https://github.com/SLNE-Development/surf-database-r2dbc) den Datenzugriff, und alle Services teilen sich laut <Ref id="adr-007-persistence" /> eine Postgres-Instanz mit einem Schema pro Service.
+
+## Zu klären vor der Entscheidung
+
+<Open>Ist `progression` ein eigener Service oder eine Tabelle in `identity`? Hängt davon ab, wie oft ihr Progression unabhängig deployen wollt.</Open>
+
+<Open>Gehört das Bazaar-Orderbuch in `economy` oder in einen eigenen `market`-Service? Orderbücher haben ein anderes Lastprofil als Konten.</Open>

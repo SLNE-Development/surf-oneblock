@@ -1,0 +1,57 @@
+---
+id: rpg-damage
+title: Schadensberechnung
+summary: Die eigene Kampfformel, die Vanilla ersetzt — entschieden in ADR-003.
+status: spec
+pillar: rpg
+release: v1
+order: 510
+updated: 2026-09-14
+depends_on: [rpg-stats]
+tags: [rpg, combat]
+---
+
+## Eigenbau, bewusst
+
+Es gibt ein `surf-combat` in der Org, das hier nicht verwendet wird. Das Schadenssystem aus <Ref id="adr-003-damage-system" /> ersetzt Vanilla vollständig und ist damit kein Aufsatz auf bestehendem Kampf, sondern dessen Ersatz.
+
+## Formel
+
+```
+Grundschaden  = (5 + Waffenschaden) × (1 + Strength / 100)
+Kritisch      = Zufall < CritChance  →  × (1 + CritDamage / 100)
+Boni          = × Π Multiplikatoren (Fähigkeiten, Effekte, Mob-Typ)
+Reduktion     = Schaden × (1 − Defense / (Defense + 100))
+```
+
+Die Reduktionsformel ist bewusst asymptotisch: Defense nähert sich 100 % an, erreicht sie aber nie. Damit bleibt jeder weitere Punkt Defense nützlich, ohne dass Unverwundbarkeit möglich wird.
+
+## Trefferablauf
+
+```
+DamageAttemptEvent   (abbrechbar — Rechte, Unverwundbarkeit, Schutzzone)
+  → Angreifer-Stats, Verteidiger-Stats
+  → Formel
+  → DamageCalculatedEvent (Module dürfen den Wert ändern)
+  → anwenden
+  → Anzeige (Zahl über dem Ziel)
+  → DamageAppliedEvent (Nachwirkungen: Lebensraub, Dornen, Quests)
+```
+
+Die Trennung zwischen *berechnet* und *angewendet* ist das, was Fähigkeiten und Effekte sauber andocken lässt, ohne die Formel selbst anzufassen.
+
+## Vanilla abschalten
+
+Vanilla-Schaden, -Rüstung und -Verzauberungen werden vollständig deaktiviert — auch Umgebungsschaden (Fall, Feuer, Ertrinken, Lava), der in eigene Werte relativ zur maximalen Health umgerechnet wird. Ein Sturz muss bei 40.000 HP anders wirken als bei 20.
+
+Tränke, Golden Apples und Absorption verlieren ihre Vanilla-Wirkung und brauchen eigene Entsprechungen — das ist Teil des Aufwands, den <Ref id="adr-003-damage-system" /> in Kauf nimmt.
+
+## Anzeige
+
+Schadenszahlen über dem Ziel, kritische Treffer hervorgehoben, Lebensbalken bei Bossen. Ohne sichtbare Zahlen wirkt eine eigene Schadensrechnung für den Spieler wie Zufall — und dann hätte man sie auch lassen können.
+
+## Performance
+
+Die Formel selbst ist ein paar Multiplikationen auf gecachten Werten. Der teure Teil wäre das Neuberechnen von Stats bei jedem Treffer — passiert nicht, siehe <Ref id="rpg-stats" />.
+
+<Open>Wie verhält sich das System bei PvP, falls es je kommt? Vermutlich braucht es dort eine eigene, gedeckelte Formel, sonst entscheidet die Spielzeit jeden Kampf.</Open>

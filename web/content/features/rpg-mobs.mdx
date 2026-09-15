@@ -1,0 +1,57 @@
+---
+id: rpg-mobs
+title: Custom Mobs
+summary: Eigene Gegner mit eigenen Werten, Verhalten und Loot — weil Vanilla-Mobs zum Stat-System nicht passen.
+status: draft
+pillar: rpg
+release: v1
+order: 540
+updated: 2026-09-13
+depends_on: [rpg-damage, platform-registry]
+tags: [rpg, combat, content]
+---
+
+## Warum eigene Mobs
+
+Mit eigener Schadensrechnung (<Ref id="adr-003-damage-system" />) haben Vanilla-Mobs keine sinnvollen Werte mehr. Ein Zombie mit 20 HP ist gegen einen Spieler mit 5.000 Schaden pro Treffer bedeutungslos.
+
+## Definition
+
+```yaml
+id: cave_lurker
+base: zombie              # nur Aussehen und Grundanimation
+health: 2400
+damage: 180
+defense: 60
+behaviour: melee_charge
+abilities:
+  - { id: leap, cooldown: 8s }
+loot:
+  - { item: "oneblock:rpg/lurker_fang", chance: 0.04 }
+  - { item: "minecraft:rotten_flesh", amount: "2-5" }
+xp: { combat: 45 }
+```
+
+## Verhalten
+
+Ein Satz austauschbarer Verhaltensbausteine statt einer eigenen KI pro Mob: `melee_charge`, `ranged_keep_distance`, `swarm`, `stationary_turret`, `boss_phases`. Ein neuer Mob entsteht als Kombination aus Baustein, Werten und Loot — nicht als neuer Code.
+
+Das ist der Unterschied zwischen "Builder und Designer können Gegner bauen" und "jeder Gegner braucht einen Entwickler".
+
+## Spawning
+
+- **Phasen-Ereignisse** — an `phaseProgress` gebunden, siehe <Ref id="oneblock-phases" />.
+- **Bereiche** — feste Zonen in öffentlichen Welten mit eigener Spawn-Tabelle.
+- **Spawner-Items** — auf der eigenen Insel platzierbar, gedeckelt.
+
+Spawner sind eine Wirtschaftsfrage, keine Kampffrage: Sie erzeugen Loot ohne Spielerzeit und gehören deshalb hart begrenzt.
+
+## Anzeige
+
+Name, Lebensbalken und Stufe über dem Mob. Bei Bossen zusätzlich Phasenanzeige. Ein Gegner, dessen Stärke man nicht einschätzen kann, ist kein Gegner, sondern eine Überraschung.
+
+## Performance
+
+Mobs zählen auf das Tick-Budget der Insel (<Ref id="multiblock-tick-budget" />). KI läuft nicht jeden Tick, sondern in gestaffelten Intervallen — entfernte Mobs seltener als nahe.
+
+<Open>Laufen Mobs auf Spieler-Inseln überhaupt frei herum, oder nur in Ereignissen und Zonen? Freies Spawnen auf der eigenen Insel ist beim Bauen eher störend.</Open>

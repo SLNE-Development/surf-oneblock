@@ -1,0 +1,64 @@
+---
+id: multiblock-engine
+title: Struktur-Engine
+summary: Erkennt Multiblock-Anordnungen, hält sie am Leben und merkt, wenn sie kaputtgehen — ohne den Server zu kosten.
+status: spec
+pillar: multiblock
+release: v1
+order: 400
+updated: 2026-09-14
+depends_on: [platform-module-spi, platform-registry]
+tags: [multiblock, performance]
+---
+
+## Aufgabe
+
+Der Spieler baut eine Anordnung von Blöcken. Die Engine erkennt, dass sie einem Muster entspricht, und macht daraus ein Objekt mit Zustand, Inventar und Verhalten.
+
+## Pattern-Definition
+
+```yaml
+id: basic_crusher
+size: [3, 3, 3]
+layers:
+  - "SSS/SCS/SSS"      # unten
+  - "SAS/A.A/SAS"      # mitte, '.' = Kern
+  - "SSS/SSS/SSS"      # oben
+keys:
+  S: "minecraft:smooth_stone"
+  C: "oneblock:multiblock/crusher_core"
+  A: "any_air"
+core: C
+rotations: [0, 90, 180, 270]
+```
+
+Der **Kern** ist der Block, an dem das Objekt hängt und an dem der Spieler interagiert. Er ist immer ein Custom-Block, sodass die Engine nie Vanilla-Blöcke scannen muss, um Kandidaten zu finden.
+
+## Erkennung — und warum sie nicht scannt
+
+Der naive Ansatz ist, bei jeder Blockplatzierung die Umgebung nach Mustern abzusuchen. Das skaliert nicht.
+
+Stattdessen: Die Erkennung startet **nur**, wenn ein Kernblock platziert wird oder der Spieler den Kern anklickt. Der Rest der Struktur wird von dort aus geprüft — ein Abgleich über maximal ein paar hundert Positionen, einmal, nicht periodisch.
+
+## Gültigkeit
+
+Eine erkannte Struktur wird gegen Beschädigung geprüft, aber ebenfalls nicht periodisch. Stattdessen registriert die Engine die belegten Positionen in einem Index; wird dort ein Block abgebaut, wird genau die betroffene Struktur ungültig. Kein Scan, kein Tick.
+
+```
+Kern platziert    → Muster prüfen → Struktur anlegen
+Block in Struktur → Struktur ungültig → Maschine pausiert, Inhalt bleibt
+                    (Spieler sieht, welcher Block fehlt)
+Struktur repariert → Kern anklicken → wieder aktiv
+```
+
+Der Inhalt bleibt bei Beschädigung erhalten. Alles andere wäre eine Einladung zum Griefing.
+
+## Chunk-Grenzen und Laden
+
+Strukturen dürfen Chunk-Grenzen überschreiten. Beim Entladen eines Chunks pausiert die Struktur und ihr Fortschritt wird eingefroren; beim Laden läuft sie exakt dort weiter (siehe <Ref id="multiblock-machines" />). Kein Chunk wird künstlich geladen gehalten, um eine Maschine laufen zu lassen — ohne Offline-Produktion gibt es dafür auch keinen Grund mehr.
+
+## Grenzen
+
+Anzahl Strukturen pro Insel ist gedeckelt und wächst mit der Ausbaustufe. Der Deckel ist keine Schikane, sondern die Voraussetzung dafür, dass <Ref id="multiblock-tick-budget" /> überhaupt einhaltbar ist — siehe <Ref id="adr-004-logistics" />.
+
+<Open>Sollen Strukturen im Bau sichtbar sein (Hologramm mit fehlenden Blöcken), oder erst nach Fertigstellung? Ersteres ist deutlich freundlicher und kostet Rendering-Aufwand.</Open>

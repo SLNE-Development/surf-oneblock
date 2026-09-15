@@ -1,0 +1,47 @@
+---
+id: island-placement
+title: Block platzieren & Slots
+summary: Wie ein Block auf eine Insel kommt, wer das darf und was beim Umsetzen passiert.
+status: spec
+pillar: island
+release: v1
+order: 260
+updated: 2026-09-13
+depends_on: [island-core, oneblock-core, island-permissions]
+tags: [island, core]
+---
+
+## Ablauf
+
+1. Spieler betritt eine Insel, auf der er Platzierungsrecht hat.
+2. Freie Slots werden sichtbar markiert.
+3. Er wählt einen Slot und bestätigt — inklusive Anzeige der Abgabe, falls die Insel eine erhebt.
+4. Der Block wird gesetzt, `slotRef` aktualisiert, Abklingzeit gestartet.
+
+## Regeln
+
+- Ein Slot trägt genau einen Block.
+- Ein Spieler belegt höchstens einen Slot gleichzeitig — über alle Inseln hinweg.
+- Platzieren auf einer Clan-Insel setzt eine explizite Einladung voraus, nicht nur Clan-Mitgliedschaft. Das ist der Unterschied zwischen "im Clan" und "hat hier einen Platz".
+- Umsetzen hat eine Abklingzeit; der Fortschritt bleibt unangetastet.
+
+## Wenn der Platz wegfällt
+
+Der unangenehme Fall: Ein Spieler wird aus dem Clan entfernt oder die Insel wird gelöscht, während sein Block dort steht.
+
+```
+Slot verliert Gültigkeit
+  → Block wird in den "heimatlos"-Zustand versetzt
+  → Ertrag pausiert, nichts geht verloren
+  → Spieler bekommt eine Nachricht
+  → beim nächsten Join: Slot wählen (eigene Insel oder andere Einladung)
+  → hat er keine eigene Insel, wird eine aus dem Standard-Preset erzeugt
+```
+
+Nichts wird gelöscht, nichts fällt still weg. Das ist der Fall, an dem Vertrauen in den Modus hängt.
+
+## Sichtbarkeit
+
+Ein Slot mit fremdem Block zeigt Besitzer, Phase und Aktivität. Das macht eine Clan-Insel lesbar — man sieht, wer mitzieht — und ist zugleich die Grundlage für Clan-Ziele in <Ref id="clan-objectives" />.
+
+<Open>Dürfen Slot-Besitzer ihren Platz untereinander tauschen, ohne dass der Insel-Besitzer zustimmt?</Open>

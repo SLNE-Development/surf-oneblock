@@ -1,0 +1,36 @@
+---
+id: platform-i18n
+title: Mehrsprachigkeit
+summary: Nachrichten reisen als Schlüssel mit Argumenten und werden erst beim Empfänger gerendert.
+status: spec
+pillar: platform
+release: v1
+order: 130
+updated: 2026-09-14
+depends_on: [platform-module-spi]
+uses: [surf-api]
+tags: [texte, konventionen]
+---
+
+## Modell
+
+Es gibt keine fertigen Textzeilen im System. Eine Nachricht ist ein Schlüssel plus Argumente und wird erst dort in Text verwandelt, wo sie jemand liest — genau das Muster, das ihr in `surf-cli` schon einsetzt.
+
+```kotlin
+player.send("island.invite.received", "inviter" to inviter.name, "island" to island.name)
+```
+
+Das klingt nach Mehraufwand und zahlt sich an drei Stellen aus: Ein Broadcast an dreißig Spieler wird dreißigmal unterschiedlich gerendert, ohne dass der Sender etwas davon weiß; ein Textfehler ist ein Katalog-Commit statt eines Deploys; und Discord- oder Web-Ausgaben können denselben Schlüssel anders formatieren als der Chat.
+
+## Kataloge
+
+- **Englisch ist die Quelle.** Jeder neue Schlüssel wird dort zuerst angelegt.
+- Deutsch wird gepflegt, weitere Sprachen nur, wenn sie jemand wirklich betreut.
+- Fehlt ein Schlüssel in der Zielsprache, greift Englisch. Fehlt er ganz, erscheint der Schlüssel selbst — sichtbar, aber nicht kaputt.
+- Ein CI-Check meldet Schlüssel im Code, die im Katalog fehlen, und Katalogeinträge, die niemand mehr benutzt.
+
+## Formatierung
+
+Farben und Hervorhebungen stehen im Katalog, nicht im Code. Damit lässt sich das Aussehen aller Nachrichten zentral ändern, ohne Module anzufassen. Zahlen, Zeiten und Mengen werden nach der Locale des Empfängers formatiert — `1.234,5` statt `1,234.5` für deutsche Spieler.
+
+<Open>Wird die Sprache aus den Client-Einstellungen übernommen oder explizit gewählt? Automatisch ist bequemer, explizit ist verlässlicher — beides zusammen (automatisch vorbelegt, änderbar) ist vermutlich richtig.</Open>

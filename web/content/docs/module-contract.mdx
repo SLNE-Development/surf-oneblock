@@ -1,0 +1,86 @@
+---
+id: module-contract
+title: Modul-Vertrag
+summary: Wie ein Feature-Modul aussieht, wie es geladen wird, wie es mit anderen redet und wie es sich abschalten lässt.
+status: draft
+updated: 2026-09-13
+order: 30
+tags: [spi, konventionen]
+---
+
+## Lebenszyklus
+
+Jedes Modul implementiert dasselbe Interface und durchläuft dieselben Phasen. Die Reihenfolge ist wichtig, weil Module voneinander abhängen dürfen — aber nur in eine Richtung.
+
+| Phase | Was passiert | Was erlaubt ist |
+| --- | --- | --- |
+| `discover` | ServiceLoader findet das Modul | nichts, nur Metadaten melden |
+| `configure` | Config wird geladen und validiert | keine anderen Module ansprechen |
+| `register` | Eigene APIs, Items, Rezepte, Commands anmelden | in Registries schreiben |
+| `link` | Abhängigkeiten auflösen, Event-Handler binden | andere APIs *lesen* |
+| `enable` | Das Modul wird aktiv | alles |
+| `disable` | Sauber herunterfahren, State flushen | alles, aber ohne neue Arbeit |
+
+Wer in `register` schon andere Module anspricht, baut sich eine Ladereihenfolge-Abhängigkeit, die beim nächsten neuen Modul kaputtgeht. Das ist der häufigste Fehler in solchen Systemen.
+
+## Deklaration
+
+```kotlin
+@Module(
+    id = "rpg-skills",
+    dependsOn = ["platform-registry", "rpg-stats"],
+    softDependsOn = ["clan-progression"],
+)
+class SkillModule : GameModule {
+    override fun register(ctx: RegisterContext) {
+        ctx.registry(SkillRegistry).addAll(BUILTIN_SKILLS)
+    }
+
+    override fun link(ctx: LinkContext) {
+        ctx.events.on<BlockMinedEvent> { grantXp(it.player, it.block) }
+    }
+}
+```
+
+- `dependsOn` — ohne dieses Modul startet das eigene nicht.
+- `softDependsOn` — falls vorhanden, danach laden; falls nicht, egal. Das ist der Mechanismus, mit dem ein Modus ohne Clans genauso läuft wie einer mit.
+
+## Kommunikation
+
+Es gibt genau drei erlaubte Wege, und jeder hat einen klaren Anwendungsfall:
+
+1. **Events** (Default) — ein Modul meldet, dass etwas passiert ist; wer will, reagiert. Keine Rückkopplung, keine Kenntnis voneinander. Für alles, was „danach auch noch passieren soll".
+2. **Query-APIs** — ein Modul fragt einen Wert ab, der jemand anderem gehört (`StatService.get(player, Stat.STRENGTH)`). Synchron, im RAM, garantiert ohne IO.
+3. **Contribution-Points** — ein Modul öffnet eine Liste, in die andere eintragen. So kommen Skill-Boni in die Stat-Berechnung, ohne dass `rpg-stats` die Skills kennen muss.
+
+<Note type="error" title="Nicht erlaubt">
+  Direkte Aufrufe in die `impl` eines anderen Moduls, statische Singletons quer über Modulgrenzen, und
+  synchrones IO in einem Event-Handler. Alle drei machen Module unentfernbar — und damit den ganzen
+  modularen Ansatz wertlos.
+</Note>
+
+## Abschaltbarkeit
+
+Ein Modul gilt erst dann als fertig, wenn der Modus **ohne** es startet und spielbar bleibt. Praktisch heißt das:
+
+- Jede `api` hat eine No-Op-Implementierung, die greift, wenn `impl` fehlt.
+- Query-APIs liefern dann neutrale Werte (Stat = Basiswert, Multiplikator = 1.0).
+- Events, die niemand mehr auslöst, haben schlicht keine Handler.
+
+Das ist auch der Testfall: In CI startet der Modus einmal mit allen Modulen und einmal mit jedem Modul einzeln deaktiviert.
+
+## Konfiguration
+
+Config kommt aus dem Config-Framework von `surf-api`, pro Modul eine Datei, Schema-validiert beim Start. Ein Modul mit ungültiger Config startet **nicht** — es startet nicht halb. Werte, die im laufenden Betrieb änderbar sein sollen, sind ausdrücklich als solche markiert und gehen über <Ref id="platform-feature-flags" />.
+
+## Namenskonventionen
+
+| Ding | Schema | Beispiel |
+| --- | --- | --- |
+| Modul-ID | `<pillar>-<name>` | `multiblock-energy` |
+| Item-Key | `oneblock:<modul>/<name>` | `oneblock:rpg/aspect_of_the_end` |
+| Event | `<Subjekt><Verb im Perfekt>Event` | `MachineFinishedEvent` |
+| Permission | `oneblock.<modul>.<aktion>` | `oneblock.island.visit` |
+| Nachricht | `<modul>.<kontext>.<key>` | `island.invite.accepted` |
+
+Nachrichten reisen als Key plus Argumente und werden erst beim Empfänger in dessen Sprache gerendert — dasselbe Muster wie in `surf-cli`. Details in <Ref id="platform-i18n" />.

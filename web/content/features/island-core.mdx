@@ -1,0 +1,53 @@
+---
+id: island-core
+title: Inseln & Presets
+summary: Grundstücke, auf denen Blöcke stehen — erstellt aus Vorlagen, erweiterbar, mit Slots.
+status: spec
+pillar: island
+release: v1
+order: 250
+updated: 2026-09-13
+depends_on: [platform-module-spi]
+tags: [island]
+---
+
+## Modell
+
+Eine Insel ist ein Grundstück mit Besitzer, Größe, Slots und Mitgliedern.
+
+| Feld | Bedeutung |
+| --- | --- |
+| `ownerRef` | Spieler **oder** Clan — nie beides |
+| `presetId` | Aus welcher Vorlage sie entstanden ist |
+| `size` | Aktuelle Ausbaustufe (Radius) |
+| `slots` | Plätze für Blöcke, Anzahl wächst mit `size` |
+| `members` | Wer welche Rechte hat, siehe <Ref id="island-permissions" /> |
+
+Eine Spieler-Insel hat zu Beginn einen Slot. Eine Clan-Insel startet mit mehreren und wächst mit dem Clan-Level.
+
+## Presets
+
+Ein Preset ist ein vorgebauter Startzustand — von Buildern erstellt, als Schematic hinterlegt. Der Spieler wählt beim ersten Betreten aus mehreren Themen (Wiese, Klippe, Sumpf, Vulkan, …).
+
+Presets sind rein kosmetisch. Sobald eines einen Spielvorteil gibt, wird aus der Auswahl eine Optimierungsfrage, und alle wählen dasselbe.
+
+## Erweiterung
+
+Die Insel wächst in Stufen gegen Material und Währung. Jede Stufe bringt Radius, Slots und Bauhöhe. Das ist die zweite große Geldsenke neben dem Block-Ausbau.
+
+## Lebenszyklus
+
+```
+Erstellen  → Preset wählen, Welt/Instanz anfordern, Grenzen setzen
+Laden      → bei Betreten, siehe island-allocator
+Entladen   → nach Leerlauf, Zustand wird gespeichert
+Löschen    → nur explizit, mit Bestätigung und Karenzzeit
+```
+
+Löschen mit Karenzzeit ist keine Bequemlichkeit, sondern Supportschutz: Ein versehentlich gelöschtes Grundstück ist sonst der teuerste Ticket-Typ, den es gibt.
+
+## Grenzen
+
+Ein Spieler kann genau eine eigene Insel besitzen und auf beliebig vielen Clan-Inseln Mitglied sein. Sein Block steht aber immer nur auf **einem** Slot — siehe <Ref id="adr-006-ownership" />.
+
+<Open>Dürfen Spieler-Inseln übertragen oder gehandelt werden? Wäre ein interessanter Markt und zugleich ein Einfallstor für Betrug.</Open>

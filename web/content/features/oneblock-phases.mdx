@@ -1,0 +1,52 @@
+---
+id: oneblock-phases
+title: Phasen & Loot-Tabellen
+summary: Wie sich der Block über die Zeit verändert und was er ausspuckt.
+status: spec
+pillar: core
+release: v1
+order: 210
+updated: 2026-09-13
+depends_on: [oneblock-core, platform-registry]
+tags: [core, progression]
+---
+
+## Modell
+
+Eine Phase ist eine Definition in der Registry mit Name, Dauer, Loot-Tabelle, Optik und optionalen Ereignissen. Der Spieler durchläuft sie der Reihe nach.
+
+```yaml
+id: phase_3_untergrund
+name: "Tiefe"
+blocks: 1200                  # Abbauten bis zur nächsten Phase
+theme: stone
+loot:
+  - { item: "minecraft:iron_ore", weight: 30 }
+  - { item: "minecraft:gold_ore", weight: 12 }
+  - { item: "oneblock:core/dense_coal", weight: 5 }
+  - { item: "oneblock:rpg/miner_talisman", weight: 1, max: 1 }
+events:
+  - { at: 600, type: mob, mob: "oneblock:mobs/cave_lurker" }
+  - { at: 1200, type: chest, loot: "phase_3_reward" }
+```
+
+## Regeln für den Aufbau
+
+- **Jede Phase braucht einen eigenen Charakter.** Eine Phase, die sich wie die vorherige mit anderen Zahlen anfühlt, ist verschenkte Entwicklungszeit. Optik, Loot und Ereignisse müssen zusammen eine Geschichte ergeben.
+- **Der Aufwand wächst um etwa 1,4× pro Phase** — linear genug, dass es nicht nach Wand aussieht, siehe <Ref id="balancing" />.
+- **Jede Phase führt genau ein neues Material ein**, das ein Rezept in <Ref id="multiblock-machines" /> freischaltet. Das ist der Draht zwischen Block und Wirtschaft.
+- **Seltene Drops sind gedeckelt.** Ein Talisman, der zweimal fällt, ist ein Wirtschaftsproblem.
+
+## Ereignisse innerhalb einer Phase
+
+Reiner Abbau wird nach zwanzig Minuten langweilig. Deshalb unterbrechen Ereignisse den Rhythmus: ein Mob (siehe <Ref id="rpg-mobs" />), eine Truhe, ein kurzer Materialrausch, ein Mini-Boss am Phasenende. Sie sind an `phaseProgress` gebunden, nicht an Zufall — der Spieler soll sie kommen sehen.
+
+## Phasenwechsel
+
+Ein Wechsel ist ein sichtbarer Moment: Ankündigung, Umgebungswechsel, freigeschaltete Rezepte, Eintrag in der Statistik. Er wird über `PhaseAdvancedEvent` gemeldet, woran Quests, Clan-Ziele und Erfolge hängen.
+
+## Loot-Ziehung
+
+Gewichtete Auswahl über eine vorberechnete Alias-Tabelle — konstante Laufzeit, keine Allokation, kein Sortieren zur Laufzeit. Bei tausend Ziehungen pro Sekunde zählt das.
+
+<Open>Wie viele Phasen zum Launch? Zehn sind spielbar, aber nach etwa drei Wochen durch. Fünfzehn wären sicherer, kosten aber Builder-Zeit.</Open>

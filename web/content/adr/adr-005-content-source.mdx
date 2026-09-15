@@ -1,0 +1,55 @@
+---
+id: adr-005-content-source
+title: ADR-005 — Wo leben Item- und Rezeptdefinitionen?
+summary: Im Code, als Kotlin-Klassen bzw. DSL. Entschieden — mit einem Ventil für Balancing-Zahlen.
+status: spec
+decision: Definitionen werden im Code als Kotlin-Klassen bzw. DSL geschrieben; reine Balancing-Zahlen bekommen ein Laufzeit-Ventil, damit sie ohne Deploy änderbar bleiben.
+updated: 2026-09-14
+order: 5
+tags: [content, deployment]
+---
+
+## Entscheidung
+
+Items, Rezepte, Phasen, Loot-Tabellen, Struktur-Patterns und Mobs werden im Code definiert — als Kotlin-Klassen oder über eine DSL — und beim Start in die Registries aus <Ref id="platform-registry" /> geschrieben.
+
+```kotlin
+object Crushers : ItemGroup("multiblock") {
+    val BASIC = machine("basic_crusher") {
+        structure = Structures.BASIC_CRUSHER
+        tier = 1
+        energyPerOp = 4
+        recipe(Items.COBBLESTONE x 8 to Items.GRAVEL x 8, ticks = 40)
+        upgrade(2) { speed = 1.25; energy = 1.20 }
+    }
+}
+```
+
+## Begründung
+
+- **Typsicherheit.** Ein Rezept, das auf ein nicht existierendes Item zeigt, kompiliert nicht. Bei mehreren hundert Definitionen, die sich gegenseitig referenzieren, ist das den Unterschied wert.
+- **Refactoring.** Ein Item umbenennen, eine Zahl überall finden, eine Struktur ableiten — im Code ist das ein Werkzeugklick, in YAML eine Textsuche mit Restrisiko.
+- **Review im normalen Fluss.** Content-Änderungen laufen als Pull Request durch dieselbe Pipeline wie alles andere, ohne zweite Infrastruktur.
+- **Keine Drift.** Definition und der Code, der sie interpretiert, liegen nebeneinander und werden zusammen geändert.
+
+## Der Preis — und das Ventil
+
+Der ehrliche Nachteil: **Jede Zahlenänderung braucht einen Deploy.** Und Balancing, das einen Deploy kostet, passiert seltener, als es sollte.
+
+Deshalb gehört zur Entscheidung ein Ventil. Reine Zahlenwerte — Preise, XP-Kurven, Drop-Gewichte, Maschinentempo — werden nicht als Literale in die Definition geschrieben, sondern über eine Nachschlagefunktion bezogen:
+
+```kotlin
+ticks = tuning("crusher.basic.ticks", default = 40)
+```
+
+`tuning` liest zur Laufzeit aus dem Web-Hub (Mechanik wie in <Ref id="platform-feature-flags" />) und fällt auf den im Code stehenden Wert zurück, wenn nichts hinterlegt ist. Damit bleibt der Code die Quelle und das Standardverhalten, und eine Balancing-Korrektur ist trotzdem eine Minutensache.
+
+Die Grenze: `tuning` gilt nur für Zahlen. **Struktur** — welche Items es gibt, welches Rezept woraus entsteht, welche Phase was droppt — bleibt ausschließlich im Code. Sobald das Web-Hub neue Items anlegen kann, ist die Typsicherheit wieder weg, für die diese Entscheidung getroffen wurde.
+
+## Konsequenzen
+
+- Der `content`-Service aus <Ref id="adr-002-service-cut" /> entfällt. Definitionen kommen mit dem Image, nicht über das Netz.
+- Alle Prozesse müssen dieselbe Version fahren. Ein Gameserver mit alten Definitionen und ein Hub mit neuen ergeben widersprüchliche Preise und Rezepte — der Rollout aus <Ref id="ops-deployment" /> muss das mit abdecken.
+- Zurückgezogene Definitionen bleiben trotzdem für immer bestehen, nur als `retired` markiert. Ein gelöschtes Item verschwindet sonst aus Inventaren — siehe <Ref id="ops-migrations" />.
+
+<Open>Wird `tuning` pro Servergruppe überschreibbar, damit man Balancing auf Staging testen kann, ohne Produktion anzufassen? Wäre konsistent zur Config-Hierarchie im Hub.</Open>

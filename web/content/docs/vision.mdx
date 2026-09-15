@@ -1,0 +1,71 @@
+---
+id: vision
+title: Spielvision
+summary: Was surf-oneblock sein soll, für wen, und welche Schleife den Spieler bei Laune hält.
+status: draft
+updated: 2026-09-14
+order: 10
+tags: [vision, kernschleife]
+---
+
+## Der Pitch in drei Sätzen
+
+Jeder Spieler besitzt einen **eigenen OneBlock** — einen Block, der beim Abbau nachwächst und sich in Phasen durch immer neue Materialien arbeitet. Diesen Block platziert er auf einer **Insel**, die entweder ihm allein gehört oder seinem Clan. Aus dem Ertrag baut er **Maschinen und Produktionsketten** auf und steigert parallel eine **RPG-Progression** aus Skills, Stats und Items, die ihn in Kampf-, Dungeon- und Boss-Content trägt.
+
+Der Unterschied zum klassischen OneBlock: Der Block ist nicht das Spiel, sondern der **Rohstoffmotor**. Das Spiel ist, was man mit dem Ertrag macht.
+
+## Die Kernschleife
+
+```
+  Block abbauen  →  Rohstoffe + Skill-XP
+        ↓                    ↓
+  Maschinen bauen     Stats & Items
+        ↓                    ↓
+  Produktion läuft    Kampf / Dungeons
+        ↓                    ↓
+  Seltene Materialien ← Loot & Drops
+        ↓
+  Bessere Maschinen, höhere Block-Phasen, mehr Inselfläche
+```
+
+Wichtig ist, dass die beiden Stränge — **Wirtschaft** (Block, Maschinen, Logistik) und **RPG** (Stats, Kampf, Loot) — sich gegenseitig füttern statt nebeneinanderher zu laufen:
+
+- Maschinen brauchen Materialien, die nur aus Kampf-Content fallen.
+- Kampf-Content braucht Ausrüstung, die nur Maschinen herstellen.
+- Beides braucht Platz und Energie, also Insel-Ausbau.
+
+<Note type="warning" title="Das Risiko">
+  Wenn ein Strang den anderen dominiert, zerfällt der Modus in zwei halbe Spiele. Die Verzahnung ist
+  kein Nice-to-have, sondern das Feature. Siehe <Ref id="balancing" />.
+</Note>
+
+## Zielgruppe
+
+- **Der Optimierer** baut Produktionsketten und rechnet Durchsatz aus. Für ihn zählen <Ref id="multiblock-logistics" /> und <Ref id="economy-market" />.
+- **Der Grinder** will Zahlen wachsen sehen — Skills, Collections, Stats. Für ihn zählen <Ref id="rpg-skills" /> und <Ref id="rpg-items" />.
+- **Der Soziale** spielt wegen des Clans. Für ihn zählen <Ref id="clan-island" /> und <Ref id="clan-objectives" />.
+- **Der Bauer** will eine schöne Insel. Für ihn zählen Presets, Fläche und <Ref id="island-visits" />.
+
+Alle vier müssen am Tag 1 etwas zu tun haben, sonst funktioniert der Launch nicht.
+
+## Was surf-oneblock ausdrücklich nicht ist
+
+- Kein Technik-Modpack-Klon. Logistik ist Mittel zum Zweck, nicht Selbstzweck.
+- Kein Pay-to-win. Käufliches beschleunigt Komfort, nie Progression — siehe <Ref id="economy-core" />.
+- Kein reines Solo-Spiel. Ohne Clan kommt man weit, aber der Clan ist die interessantere Route.
+
+## Session-Design
+
+| Spielertyp | Sitzung | Was er in der Zeit schafft |
+| --- | --- | --- |
+| Gelegenheitsspieler | 20 Min | Maschinen leeren, Block ein Stück, eine Quest |
+| Stammspieler | 1–2 h | Eine Produktionsstufe, ein Dungeon-Run, Handel |
+| Hardcore | 4 h+ | Phasenwechsel, Boss, Insel-Umbau |
+
+Produziert wird ausschließlich bei Anwesenheit — es gibt keine Offline-Produktion (siehe <Ref id="balancing" />). Das macht Spielzeit zur einzigen Währung, hat aber eine Folge, die im Design mitgedacht werden muss: Die Ausgabepuffer der Maschinen müssen eine ganze Sitzung tragen, und der Gelegenheitsspieler braucht Ausgleich über Quests und Clan-Ziele statt über die Insel, die nachts für ihn arbeitet.
+
+## Offene Punkte
+
+<Open>Saisons ja oder nein? Ein Reset alle X Monate hält die Wirtschaft gesund, kostet aber Spieler, die an ihrer Insel hängen.</Open>
+
+<Open>Wie viel PvP? Aktuell ist nichts geplant, aber Clan-Objectives wären mit Wettbewerb deutlich interessanter.</Open>

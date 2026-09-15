@@ -1,0 +1,68 @@
+---
+id: platform-profile
+title: Spielerprofil & Session
+summary: Laden, Halten und Zurückschreiben des Spielerzustands — inklusive Lease gegen Duplikation.
+status: spec
+pillar: platform
+release: v1
+order: 115
+updated: 2026-09-14
+depends_on: [platform-module-spi]
+uses: [surf-database-r2dbc]
+tags: [persistenz, identity]
+---
+
+## Ziel
+
+Wenn ein Spieler joint, muss sein kompletter Zustand da sein: Skills, Stats, Währung, Insel, Block, Collections, Quests. Während er spielt, muss das alles ohne Datenbankzugriff verfügbar sein. Beim Verlassen muss nichts verloren gehen — auch nicht bei einem Absturz.
+
+## Was schon da ist
+
+Ein fertiges Profilsystem gibt es nicht — das hier ist Neubau. Die Grundlage darunter steht aber: [surf-database-r2dbc](https://github.com/SLNE-Development/surf-database-r2dbc) liefert nicht-blockierenden Postgres-Zugriff über Exposed, was für Laden und Flush genau das Richtige ist, weil kein Tick-Thread auf IO wartet.
+
+Neu sind das Lease, die `ProfilePart`-Registrierung und die Outbox.
+
+## Ablauf
+
+```
+Join    → Lease anfordern (identity-Service)
+        → Snapshot laden (identity, progression, economy)
+        → Module bauen ihren RAM-State daraus auf
+        → ProfileLoadedEvent
+Spiel   → Module mutieren RAM, schreiben Deltas in die Outbox
+        → Flush alle 15 s, Lease-Heartbeat alle 10 s
+Leave   → finaler Flush, Snapshot, Lease freigeben
+```
+
+## Lease
+
+Ein Lease ist das exklusive Schreibrecht auf ein Profil, gehalten für 30 Sekunden und alle 10 Sekunden erneuert. Kein Lease heißt: Der Prozess darf lesen, aber nichts schreiben.
+
+Das löst den klassischen Duplikationsfehler — Spieler wechselt Server, beide Prozesse schreiben, Items existieren doppelt. Der Preis ist eine Wartezeit von bis zu 30 Sekunden, wenn ein Prozess abstürzt, während er das Lease hält. Das ist der bessere Fehlerfall.
+
+<Note type="warning" title="Der kritische Pfad">
+  Wenn ein Server abstürzt, ohne das Lease freizugeben, kann der Spieler bis zum Ablauf nicht
+  woanders spielen. Deshalb kurze Ablaufzeit und ein Admin-Befehl, der ein Lease bricht — mit
+  Protokolleintrag, siehe <Ref id="ops-admin-tools" />.
+</Note>
+
+## Modul-Anbindung
+
+Jedes Modul, das Zustand hält, meldet einen `ProfilePart` an — mit einem Schlüssel, einem Serialisierer und einer Fassung. Der Loader lädt und speichert diese Teile, das Modul kümmert sich nicht um IO.
+
+```kotlin
+ctx.profile.register(ProfilePart("skills", SkillState.serializer(), version = 3))
+```
+
+Die Fassung erlaubt Migrationen beim Laden: Ein Profil mit Version 2 wird durch die registrierten Migrationsschritte auf 3 gehoben, bevor das Modul es sieht.
+
+## Fehlerfälle
+
+| Fall | Verhalten |
+| --- | --- |
+| Snapshot nicht ladbar | Join wird abgelehnt, mit Meldung. Kein Spiel mit leerem Profil. |
+| Ein `ProfilePart` fehlerhaft | Modul startet für diesen Spieler im Neutralzustand, Fehler wird gemeldet |
+| Flush schlägt fehl | Deltas bleiben in der Outbox, erneuter Versuch mit Backoff |
+| Prozess-Shutdown | Alle Profile werden geflusht, bevor der Prozess endet |
+
+Der zweite Fall ist bewusst nachsichtig: Ein kaputter Quest-Stand soll den Spieler nicht vom Spielen abhalten.

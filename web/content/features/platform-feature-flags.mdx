@@ -1,0 +1,50 @@
+---
+id: platform-feature-flags
+title: Feature-Flags
+summary: Features zur Laufzeit an- und abschalten, für Zielgruppen ausrollen und in Sekunden zurücknehmen.
+status: spec
+pillar: platform
+release: v1
+order: 120
+updated: 2026-09-14
+depends_on: [platform-module-spi]
+uses: [surf-redis]
+tags: [rollout, betrieb]
+---
+
+## Ziel
+
+Ein Feature soll deaktiviert in Produktion gehen und dort schrittweise scharf geschaltet werden. Ohne das ist "modular ausliefern" nur ein Versprechen — siehe <Ref id="release-strategy" />.
+
+## Flag-Typen
+
+| Typ | Wirkung | Beispiel |
+| --- | --- | --- |
+| `boolean` | an/aus für alle | `multiblock.logistics` |
+| `percentage` | für X % der Spieler, stabil pro UUID | `rpg.dungeons` bei 10 % |
+| `audience` | für eine Gruppe | nur Staff, nur ein Clan |
+| `value` | eine Zahl oder ein String zur Laufzeit | Maschinen-Tickrate |
+
+`percentage` muss stabil sein: Derselbe Spieler landet bei 10 % immer auf derselben Seite, sonst flackert das Feature zwischen Sessions und die Rückmeldungen werden unbrauchbar.
+
+## Verteilung
+
+Flags leben im Web-Hub, werden über den verteilten Bus gepusht und in jedem Prozess gecacht. Ein Ausfall des Hubs ändert nichts an den laufenden Werten — der letzte bekannte Stand gilt weiter, und beim Start greift der im Image hinterlegte Default. Ein Feature darf nie deshalb ausfallen, weil die Flag-Quelle nicht erreichbar ist.
+
+## Im Code
+
+```kotlin
+if (flags.enabled("multiblock.logistics", player)) { … }
+```
+
+Der Aufruf ist ein Map-Lookup, kein Netzwerk-Call, und damit auch im Tick erlaubt.
+
+## Disziplin
+
+Flags sind Schulden. Jedes bekommt beim Anlegen ein Ablaufdatum und einen Verantwortlichen; nach dem Ausrollen auf 100 % wird es im nächsten Zyklus samt totem Code entfernt. Ein Feature-Flag-System ohne Aufräumregel wird innerhalb eines Jahres zum zweiten, unübersichtlicheren Konfigurationssystem.
+
+<Note type="info" title="Was ein Flag nicht ist">
+  Kein Ersatz für Konfiguration. Balancing-Werte gehören in Definitionen (siehe
+  <Ref id="adr-005-content-source" />), nicht in Flags — sonst weiß hinterher niemand mehr, welche
+  Zahl gerade gilt.
+</Note>

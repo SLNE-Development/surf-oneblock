@@ -1,0 +1,47 @@
+---
+id: island-permissions
+title: Insel-Rechte
+summary: Wer darf auf einer Insel bauen, platzieren, Maschinen bedienen und das Lager anfassen.
+status: spec
+pillar: island
+release: v1
+order: 270
+updated: 2026-09-14
+depends_on: [island-core]
+tags: [island, rechte]
+---
+
+## Eigenbau, bewusst
+
+Es gibt generische Schutz- und Regionssysteme in der Org, und sie werden hier **nicht** verwendet. Der Grund: Insel-Rechte hängen an Slots, Clan-Rollen und Maschinen-Eigentum gleichzeitig — eine Verzahnung, die ein allgemeiner Schutz-Layer nicht abbildet. Ihn dahin zu biegen kostet mehr als der Eigenbau und hinterlässt ein System, das keiner der beiden Seiten mehr gehört.
+
+## Modell
+
+Rollen mit einem Satz Rechte, pro Insel vergeben. Vier Standardrollen decken fast alles ab; eigene Rollen sind ein V1.x-Thema.
+
+| Rolle | Typische Rechte |
+| --- | --- |
+| Besitzer | alles, inklusive Löschen und Rollen vergeben |
+| Verwalter | bauen, einladen, Maschinen, Lager, Abgabe ändern |
+| Mitglied | bauen, eigenen Block platzieren, eigene Maschinen |
+| Besucher | betreten, ansehen |
+
+## Rechte im Einzelnen
+
+`ENTER`, `BUILD`, `BREAK`, `PLACE_BLOCK` (den OneBlock), `MACHINE_USE`, `MACHINE_BUILD`, `STORAGE_TAKE`, `STORAGE_PUT`, `INVITE`, `KICK`, `MANAGE_ROLES`, `MANAGE_ISLAND`.
+
+Die Trennung zwischen `MACHINE_USE` und `MACHINE_BUILD` ist wichtiger als sie aussieht: Auf einer Clan-Insel sollen Mitglieder Maschinen bedienen dürfen, ohne die Kette umbauen zu können, an der jemand einen Tag gesessen hat.
+
+## Prüfung
+
+Rechte werden beim Betreten in den RAM geladen und dort geprüft — kein Service-Call pro Blockplatzierung. Änderungen werden über den verteilten Bus gepusht und greifen sofort, auch wenn der betroffene Spieler gerade auf einem anderen Prozess ist.
+
+## Eigentum an Maschinen
+
+Eine Maschine gehört dem, der sie gebaut hat. Der Insel-Besitzer kann sie abbauen (sonst wäre er auf seinem eigenen Grund blockiert) — der Inhalt geht dabei aber an den Erbauer zurück, nicht an den Abbauenden. Das verhindert die naheliegendste Missbrauchsform.
+
+<Note type="warning" title="Protokoll">
+  Jede Rechteänderung, jeder Rauswurf und jeder Abbau fremder Maschinen wird protokolliert. Ohne
+  dieses Protokoll ist jeder Griefing-Fall im Support ein Wort-gegen-Wort — siehe
+  <Ref id="ops-admin-tools" />.
+</Note>

@@ -1,0 +1,55 @@
+---
+id: economy-core
+title: Währung & Konten
+summary: Geld, Transaktionen und die Regeln, die verhindern, dass Werte aus dem Nichts entstehen.
+status: spec
+pillar: economy
+release: v1
+order: 600
+updated: 2026-09-14
+depends_on: [platform-module-spi]
+uses: [surf-transaction]
+tags: [wirtschaft]
+---
+
+## Währungen
+
+| Währung | Quelle | Verwendung |
+| --- | --- | --- |
+| Münzen | Verkauf, Quests, Mobs | alles Alltägliche |
+| Clan-Punkte | Clan-Ziele | Clan-Freischaltungen |
+| Premium | Kauf | ausschließlich Kosmetik und Komfort |
+
+Zwei Regeln, die nicht verhandelbar sind: Premium ist **nicht** in Münzen umwandelbar, und Premium kauft nichts mit Spielwert — siehe <Ref id="balancing" />.
+
+## Was schon da ist
+
+[surf-transaction](https://github.com/SLNE-Development/surf-transaction) bringt Währungen und Buchungen mit. Der Punkt, der vor der Übernahme zu prüfen ist, steht unten unter *Idempotenz* — ohne Idempotenz-Schlüssel erzeugt jeder Netzwerk-Wiederholungsversuch Geld, und das ist der teuerste Wirtschaftsfehler überhaupt. Falls surf-transaction das nicht mitbringt, gehört es dort ergänzt und nicht im Modus umgangen.
+
+## Transaktionen
+
+Jede Änderung eines Kontostands ist eine Transaktion mit Typ, Betrag, Gegenpartei und Grund. Sie werden protokolliert und sind auswertbar — das ist die Grundlage dafür, Inflation überhaupt zu erkennen.
+
+Buchungen laufen **synchron** gegen den `economy`-Service, nie über die Outbox (<Ref id="adr-007-persistence" />). Geld ist der eine Zustand, bei dem ein verlorenes Flush-Intervall nicht akzeptabel ist.
+
+## Idempotenz
+
+Jede Transaktion trägt einen Schlüssel; dieselbe zweimal gesendet wird einmal gebucht. Ohne das erzeugt jeder Netzwerk-Wiederholungsversuch Geld — der klassischste aller Wirtschaftsfehler.
+
+## Senken
+
+Für jede Quelle eine Senke. Die wichtigsten:
+
+- Server-Markt: fällt der Preis bei Überangebot, versiegt der Geldhahn von selbst (<Ref id="economy-server-market" />)
+- Maschinen-Upgrades und Reparatur
+- Insel- und Block-Ausbau
+- Reforge und Verzauberung (<Ref id="rpg-items" />)
+- Auktionsgebühr, die vernichtet und nicht umverteilt wird
+
+Die Auktionsgebühr ist die einzige Senke, die automatisch mit der Wirtschaft mitwächst, und damit die verlässlichste.
+
+## Überwachung
+
+Geldmenge gesamt, Zufluss und Abfluss pro Tag, Verteilung über Spieler, Preisindex der meistgehandelten Waren — als Dashboard in <Ref id="ops-telemetry" />. Inflation erkennt man an diesen Kurven, Wochen bevor Spieler sie im Chat erwähnen.
+
+<Open>Braucht es eine Vermögenssteuer oder Lagergebühr gegen Horten? Wirksam, und bei Spielern ausgesprochen unbeliebt.</Open>

@@ -1,0 +1,46 @@
+---
+id: multiblock-tick-budget
+title: Tick-Budget & Drosselung
+summary: Eine überladene Insel wird sichtbar langsamer — statt den ganzen Server mitzureißen.
+status: spec
+pillar: multiblock
+release: v1
+order: 440
+updated: 2026-09-13
+depends_on: [multiblock-engine]
+tags: [performance, betrieb]
+---
+
+## Idee
+
+Jede Insel bekommt ein Zeitbudget pro Tick. Alles, was auf ihr rechnet — Maschinen, Netze, Mobs, Struktur-Prüfungen — wird gegen dieses Budget gemessen. Wird es überschritten, drosselt das System **diese Insel**, nicht den Prozess.
+
+Damit wird ein Performanceproblem zu einem Spielproblem, das der Verursacher sieht und beheben kann, statt zu einem Serverproblem, das alle trifft.
+
+## Messung
+
+```kotlin
+budget.measure(islandId) {
+    machines.tick()
+    networks.tick()
+}
+```
+
+Gemessen wird als gleitender Durchschnitt über die letzten 100 Ticks — eine einzelne teure Operation soll nicht sofort drosseln.
+
+## Drosselung
+
+| Auslastung | Reaktion |
+| --- | --- |
+| < 80 % | normal |
+| 80–100 % | Netz-Ticks strecken, Anzeige ausdünnen |
+| > 100 % | Maschinen-Ticks strecken, Warnung an anwesende Spieler |
+| dauerhaft > 150 % | Bau neuer Maschinen gesperrt, bis der Wert sinkt |
+
+Die Warnung ist wichtig und muss konkret sein: welche Maschinen am teuersten sind und was hilft. "Deine Insel ist überlastet" ohne Hinweis erzeugt nur ein Support-Ticket.
+
+## Sichtbarkeit
+
+Der Spieler sieht seine Auslastung als Prozentwert in der Insel-Übersicht, das Team sieht die Verteilung über alle Inseln in <Ref id="ops-telemetry" />. Die teuersten Inseln sind zugleich die interessantesten Testfälle — und die frühesten Warnzeichen für ein Balancing-Problem.
+
+<Open>Wie hoch ist das Budget? Ein Vorschlag wäre, dass alle Inseln eines Prozesses zusammen höchstens 25 % der Tick-Zeit beanspruchen — konkret beziffern lässt sich das erst nach <Ref id="adr-001-world-hosting" />.</Open>

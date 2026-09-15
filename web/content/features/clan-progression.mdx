@@ -1,0 +1,40 @@
+---
+id: clan-progression
+title: Clan-Level & Perks
+summary: Womit ein Clan wächst und was das den Mitgliedern bringt — ohne Solo-Spieler abzuhängen.
+status: draft
+pillar: clans
+release: v1
+order: 320
+updated: 2026-09-13
+depends_on: [clan-bridge, clan-island]
+tags: [clans, progression]
+---
+
+## Clan-XP
+
+Clan-XP entsteht aus der Aktivität der Mitglieder: abgebaute Blöcke, produzierte Waren, erledigte Quests, erreichte Phasen. Wichtig ist die Gewichtung: **pro Mitglied gedeckelt**, sonst ist ein Clan mit fünfzig Karteileichen besser als einer mit zehn Aktiven.
+
+Vorschlag: Jedes Mitglied trägt bis zu einem Tageslimit bei; darüber hinaus zählt es nicht mehr. Das belohnt viele aktive Mitglieder statt weniger Dauerspieler.
+
+## Was Level freischalten
+
+| Stufe | Freischaltung |
+| --- | --- |
+| früh | mehr Slots, größere Insel |
+| mittel | Lager-Kapazität, Energienetz-Ausbau, Clan-Warp |
+| spät | Clan-Werkbank, Rezepte, kosmetische Insel-Themen |
+
+## Die Balancing-Grenze
+
+Perks dürfen **Komfort und Umfang** geben, keine Ertragsmultiplikatoren. Ein Clan-Bonus von "+20 % Abbauertrag" macht Solo-Spiel objektiv schlechter und widerspricht dem Ownership-Modell aus <Ref id="adr-006-ownership" />, in dem Progression persönlich bleibt.
+
+Erlaubt: mehr Platz, mehr Slots, gemeinsame Rezepte, Warps, Optik. Nicht erlaubt: mehr Ertrag pro Aktion, mehr Skill-XP, höhere Stats.
+
+<Note type="warning" title="Die Zahl, auf die es ankommt">
+  Ab ungefähr 15 % effektivem Vorteil beginnt sich Solo-Spiel falsch anzufühlen. Das ist kein
+  gemessener Wert, sondern Erfahrung aus vergleichbaren Modi — aber es lohnt sich, ihn im Blick zu
+  behalten, siehe <Ref id="balancing" />.
+</Note>
+
+<Open>Verliert ein Clan Level bei Inaktivität? Verfall hält Ranglisten lebendig und frustriert Gelegenheitsclans.</Open>

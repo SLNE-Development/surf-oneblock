@@ -1,0 +1,84 @@
+---
+id: balancing
+title: Balancing-Leitplanken
+summary: Progressionskurven, Zeitbudgets, Offline-Produktion und die Regeln, die verhindern, dass die Wirtschaft kippt.
+status: draft
+updated: 2026-09-14
+order: 60
+tags: [balancing, wirtschaft, progression]
+---
+
+## Zeitbudget statt Zahlenwerte
+
+Balancing wird selten an einzelnen Zahlen entschieden, sondern daran, wie lange etwas dauern soll. Deshalb beginnt jede Kurve mit einer Zeitvorgabe, aus der die Zahlen abgeleitet werden — nicht umgekehrt.
+
+| Meilenstein | Zielzeit für Gelegenheitsspieler | für Stammspieler |
+| --- | --- | --- |
+| Erste Maschine läuft | 30 Min | 20 Min |
+| Phase 2 des Blocks | 2 h | 1 h |
+| Erste Produktionskette (3 Maschinen) | 8 h | 4 h |
+| Skill auf Stufe 25 | 2 Wochen | 5 Tage | 
+| "Endgame" erreicht | nie vollständig | 3 Monate |
+
+Die letzte Zeile ist Absicht: Der Modus braucht ein Ziel, das auch der Hardcore-Spieler nicht in vier Wochen abräumt, sonst ist der Server nach einem Monat leer.
+
+## Die drei Kurven
+
+- **Block-Phasen** wachsen linear im Aufwand. Jede Phase kostet etwa 1,4× der vorherigen. Exponentielles Wachstum fühlt sich hier schnell nach Wand an, weil der Spieler keine Hebel hat, es zu beschleunigen.
+- **Skills** wachsen exponentiell (~1,15× pro Stufe), weil der Spieler sehr wohl Hebel hat: bessere Werkzeuge, Maschinen, Boni. Die Kurve frisst diese Hebel auf, statt sie zu entwerten.
+- **Maschinen-Durchsatz** wächst pro Upgrade-Stufe stärker als die Kosten (~1,25× Ertrag bei ~1,2× Kosten). Das ist bewusst leicht positiv: Optimieren muss sich lohnen, sonst baut niemand Ketten.
+
+<Note type="warning" title="Der Punkt, an dem es kippt">
+  Sobald Maschinen-Durchsatz schneller wächst als Materialsenken, entsteht Inflation und alles außer
+  den obersten Rezepten wird wertlos. Deshalb ist jede neue Maschinenstufe nur zusammen mit einer
+  neuen Senke freizugeben — siehe unten.
+</Note>
+
+## Keine Offline-Produktion
+
+Maschinen laufen **nur**, während jemand da ist. Es wird nichts nachgerechnet, nichts nachgebucht, nichts nachgeholt: Wer nicht spielt, produziert nicht.
+
+Das ist eine bewusste Entscheidung gegen den Standard in diesem Genre, und sie hat drei Gründe:
+
+- **Nur aktive Spieler werden belohnt.** Ein Modus, in dem die Insel über Nacht mehr erwirtschaftet als eine Spielsitzung, entwertet das Spielen selbst.
+- **Zweitaccount-Farmen sterben ab.** Ein Account, der nur zum Produzieren existiert, bringt ohne Anwesenheit nichts.
+- **Die Rechnung entfällt komplett.** Keine Nachhol-Formel, keine Deckel, keine Sonderfälle bei Energie und Puffern — und keine Klasse von Fehlern, bei denen eine Formel mehr ausschüttet als der echte Tick es getan hätte.
+
+### Was das fürs Balancing bedeutet
+
+Die Kurven aus diesem Dokument gelten pro **aktiver** Stunde, nicht pro Kalendertag. Zwei Folgen davon:
+
+- **Maschinen dürfen großzügiger sein.** Ohne Offline-Ertrag ist der Durchsatz pro Stunde die einzige Quelle, und der darf sich entsprechend lohnen.
+- **Der Puffer entscheidet über die Sitzungslänge.** Läuft eine Maschine nach zehn Minuten voll, ist Wegklicken bestraft. Ausgabepuffer müssen also mindestens eine typische Sitzung tragen, eher mehr.
+
+<Note type="warning" title="Der Preis dieser Entscheidung">
+  Gelegenheitsspieler verlieren gegenüber Vielspielern schneller den Anschluss, weil ihnen der
+  passive Ausgleich fehlt. Das gehört über andere Hebel aufgefangen — tägliche Quests mit ordentlicher
+  Belohnung, Aufholmechaniken bei Skills, Clan-Ziele, die über die Woche laufen — nicht über die
+  Hintertür einer stillen Offline-Produktion.
+</Note>
+
+## Geldsenken
+
+Für jede Quelle muss eine Senke existieren. Der Grundsatz: **Progression darf nie die einzige Senke sein**, sonst horten Spieler am Ende des Contents unbegrenzt.
+
+| Quelle | Zugehörige Senke |
+| --- | --- |
+| Maschinen-Output | Reparatur, Energie, Upgrade-Kosten |
+| Verkauf an NPCs | Inselerweiterung, Presets, Warps |
+| Quests und Bosse | Reforge, Verzauberungen, Slot-Freischaltung |
+| Handel zwischen Spielern | Auktionsgebühr (prozentual, wird vernichtet) |
+
+Die Auktionsgebühr ist die wichtigste, weil sie proportional zum Handelsvolumen skaliert — sie wächst automatisch mit der Wirtschaft mit.
+
+## Pay-to-win-Grenze
+
+Käuflich sind: Kosmetik, Komfort (mehr Warps, größeres Lager, Inselthemen), Slots für parallele Aktivitäten. Nicht käuflich sind: Ressourcen, Skill-XP, Stats, Items mit Spielwert, Produktionsgeschwindigkeit.
+
+Der Grenzfall ist "Zeitersparnis". Die Regel: Etwas darf Wartezeit verkürzen, aber niemals Ertrag pro Zeit erhöhen. Ein sofort abgeschlossener Maschinenlauf liefert dieselbe Menge wie der gewartete — nur früher.
+
+## Offene Punkte
+
+<Open>Sollen Skills eine weiche Obergrenze haben (Soft-Cap ab Stufe 40), damit Neueinsteiger nicht chancenlos sind?</Open>
+
+<Open>Wie stark darf der Clan-Bonus werden? Ab ~15 % wird Solo-Spiel spürbar schlechter, und das widerspricht dem Ownership-Modell.</Open>

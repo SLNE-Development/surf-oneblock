@@ -1,0 +1,95 @@
+---
+id: adr-001-world-hosting
+title: ADR-001 — Wo laufen Hubs und Inseln?
+summary: Hubs auf Minestom, Gameserver auf Paper oder einer paralleltickenden Variante. Entschieden.
+status: spec
+decision: Hubs laufen auf Minestom (billig, viele Instanzen); die Inseln laufen auf Paper bzw. UniverseSpigot, das mehrere Welten asynchron ticken kann.
+updated: 2026-09-14
+order: 1
+uses: [mistra, universe-spigot|https://universespigot.com/]
+tags: [architektur, minestom, paper, universe]
+---
+
+## Entscheidung
+
+| Rolle | Plattform |
+| --- | --- |
+| Hub, Insel-Auswahl, Auktionshaus, Server-Markt, Warteschlangen | **Minestom** |
+| Gameserver mit den Inseln | **Paper** oder **UniverseSpigot** (parallele Welt-Ticks) |
+
+Hubs sind zustandsarm und tragen fast kein Gameplay — auf Minestom kosten sie wenig Speicher und starten in Sekunden, sodass man einfach mehrere davon hinstellt und über den Proxy verteilt. Die Inseln bleiben auf der Paper-Linie, weil dort das Vanilla-Verhalten erhalten bleibt, das Spieler beim Bauen erwarten, und weil das Team die Plattform kennt.
+
+## Warum die Inseln nicht auch auf Minestom laufen
+
+Die naheliegende Frage: Wenn die Hubs auf Minestom billiger sind, warum nicht auch die Inseln? Der Modus ersetzt Vanilla ja ohnehin an vielen Stellen.
+
+Der Grund ist eine Asymmetrie. Minestom ist genau dort günstig, wo Vanilla ohnehin wegfällt — Kampf, Items, Mobs, Verzauberungen, Crafting, Lagerung, Logistik sind in diesem Modus alle Eigenbau. Was danach übrig bleibt, ist fast ausschließlich **Bau- und Geländeverhalten**. Und das ist der Zweck einer Insel. Im Hub baut niemand, deshalb kostet Minestom dort nichts; auf einer Insel baut jeder, und jede Lücke fällt beim ersten gesetzten Block auf.
+
+### Was zu bauen wäre
+
+Der abschätzbare Teil:
+
+| Bereich | Grobe Größenordnung |
+| --- | --- |
+| Wasser und Lava — Quellen, Fließen, Obsidian- und Stein-Reaktionen | 1–2 Wochen inkl. Sonderfälle und Performance |
+| Fallende Blöcke (Sand, Kies) | Tage |
+| Wachstum: Feldfrüchte, Bäume, Gras, Blattzerfall, Knochenmehl | ~2 Wochen — nicht optional, Foraging ist ein Skill in <Ref id="rpg-skills" /> |
+| Block-Entities wie Kisten und Öfen | moderat; Lagerung wird ohnehin selbst gebaut |
+
+Zusammen sechs bis acht Wochen für einen Entwickler. Machbar.
+
+Nicht abschätzbar ist der Rest: Platzierungsregeln (Treppen-Orientierung, Stufen, Zaun- und Mauerverbindungen, Glasscheiben, Doppelkisten, Türen), Halterungsregeln (Fackeln, Leitern, Banner, Schilder), Knöpfe, Druckplatten, Eimer, Scheren, Feuer, TNT, Betten, Boote. Jedes Einzelne ist klein, es sind Hunderte, und man findet sie über Bugreports statt über eine Liste. Diese Kurve flacht nicht ab. Redstone ist der Extremfall: realistisch Monate, praktisch gar nicht.
+
+### Der Ökosystem-Stand
+
+Minestoms eigenes [VanillaReimplementation](https://github.com/Minestom/VanillaReimplementation) ist ausdrücklich als *not ready for production* mit begrenztem Funktionsumfang gekennzeichnet. Community-Projekte decken Blöcke und Fluide ([blocks-and-stuff](https://github.com/everbuild-org/blocks-and-stuff)), Platzierung ([Minestom-Placement](https://github.com/ALS-Project/Minestom-Placement)) und Redstone ([BasicRedstone](https://github.com/TogAr2/BasicRedstone)) teilweise ab — alle partiell und von Einzelpersonen gepflegt. Das gibt einen Startvorsprung, verlagert Restlücke und Wartung aber ins eigene Team. Bei einer Kernplattform ist das eine andere Art von Abhängigkeit als bei einem Plugin.
+
+Dazu der Team-Zuschnitt: Vier Builder und ein geplantes Insel-Schaufenster (<Ref id="island-visits" />) heißen, dass Bauen Hauptaktivität ist. Fehlende Mauerverbindungen liest ein Builder nicht als fehlendes Feature, sondern als kaputten Server.
+
+### Was diese Entscheidung kostet
+
+Sie ist nicht gratis. Minestom wäre pro Insel billiger, und vor allem läge dort der saubere Chunk-Store aus <Ref id="island-storage" /> greifbar bereit — `IChunkLoader` ist genau der Eingriffspunkt, der auf der Paper-Linie fehlt. Stattdessen wird die UniverseSpigot-Lizenz bezahlt und mit Variante A gelebt, also Archiv pro Insel und Ladezeit proportional zur Inselgröße.
+
+<Note type="warning" title="Die Bedingung, unter der sich das umdreht">
+  Erlauben Inseln <strong>kein freies Bauen</strong>, sondern nur eine kuratierte Blockpalette — wie
+  in Tycoon-Modi, wo Maschinen und Deko aus einem Katalog gesetzt werden —, bricht der lange Schwanz
+  zusammen: Verhalten wird nur für zugelassene Blöcke gebraucht, und das ist eine endliche Liste.
+  Dann wäre Minestom für die Inseln die bessere Wahl, nicht nur eine vertretbare.
+</Note>
+
+<Open>Die Designfrage, an der das hängt: Baut ein Spieler auf seiner Insel frei, oder gestaltet er sie aus einem Katalog? Solange die Antwort „frei" lautet, bleibt es bei der Aufteilung oben. Lautet sie „Katalog", gehört die Plattformfrage für die Inseln neu aufgemacht.</Open>
+
+## Was das für die Module bedeutet
+
+Der Modus läuft damit auf **zwei** Plattformen, und das ist der Preis der Entscheidung. Die Regel aus <Ref id="platform-module-spi" /> bleibt deshalb dauerhaft in Kraft, nicht nur bis zur Entscheidung:
+
+> Kein Modul außerhalb von `adapter-*` importiert Bukkit- oder Minestom-Typen.
+
+Praktisch heißt das: Ein Modul, das auf beiden Seiten läuft, braucht beide Adapter. Die gute Nachricht ist, dass die Verteilung günstig liegt — der Großteil der Gameplay-Module (OneBlock, Multiblocks, RPG-Kampf) läuft ausschließlich auf dem Gameserver, und der Großteil der Hub-Module (Markt, Auswahl, Warteschlange) ausschließlich im Hub. Wirklich beidseitig sind vor allem <Ref id="platform-gui" />, <Ref id="platform-i18n" />, <Ref id="platform-profile" /> und der Chat.
+
+## Parallele Welt-Ticks
+
+UniverseSpigot kann mehrere Welten asynchron ticken, und das passt exakt zum Zuschnitt dieses Modus: Inseln sind voneinander unabhängig, es gibt keine weltübergreifende Physik und keine gemeinsamen Entities. Der Gewinn ist, dass ein Gameserver deutlich mehr Inseln hält, bevor die Tick-Zeit zum Problem wird.
+
+Zwei Dinge, die dadurch nicht verschwinden:
+
+- **Das Tick-Budget pro Insel bleibt nötig** (<Ref id="multiblock-tick-budget" />). Parallelität verschiebt die Grenze, sie hebt sie nicht auf — und eine einzelne überladene Insel blockiert weiterhin ihren eigenen Thread.
+- **Modul-Code muss threadsicher werden.** Sobald zwei Welten parallel ticken, laufen zwei Maschinen-Ticks gleichzeitig. Alles, was quer über Inseln hinweg Zustand teilt — Registries, Caches, Zähler — braucht entweder Unveränderlichkeit oder explizite Synchronisation. Das ist die unterschätzte Folge dieser Entscheidung und gehört von Anfang an als Regel im Modul-Vertrag, nicht als späterer Bugfix.
+
+## Die Abhängigkeit, die damit eingekauft wird
+
+UniverseSpigot ist ein kommerzieller Fork mit Einmallizenz und optionalem Abo — also Fremdsoftware ohne eigenen Quellcodezugriff, auf der die gesamte Gameplay-Seite steht. Das ist vertretbar, aber es gehört benannt, weil der Modus damit in drei Punkten von einem Anbieter abhängt:
+
+- **Version-Updates.** Springt Minecraft auf eine neue Version, könnt ihr erst nachziehen, wenn der Fork nachzieht.
+- **Fehler in der Plattform** könnt ihr nicht selbst beheben, sondern nur melden.
+- **Lizenzbedingungen** gelten pro Instanz. Bei horizontaler Skalierung ist das ein laufender Kostenposten, der mit der Spielerzahl wächst.
+
+Gegenmittel ist dieselbe Adapter-Disziplin wie oben: Solange kein Modul die Plattform direkt kennt, ist ein Wechsel auf Paper, Folia oder einen anderen Fork eine Adapter-Frage und kein Umbau. Der Wechsel muss nicht geplant, aber möglich bleiben.
+
+## Anzahl der Prozesse
+
+Hubs skalieren horizontal nach Spielerzahl, Gameserver nach Tick-Last. Wie viele es zum Start sind, ergibt der Lasttest aus <Ref id="adr-004-logistics" /> — 50 Inseln mit je 100 Maschinen ist der Maßstab, an dem sich die Kapazität eines Gameservers ablesen lässt.
+
+<Open>UniverseSpigot gegen Paper messen, bevor es festgeklopft wird: derselbe Lasttest auf beiden. Erst dann steht, ob der Mehraufwand für Threadsicherheit sich in Inseln pro Prozess auszahlt.</Open>
+
+<Open>Bietet UniverseSpigot einen Eingriffspunkt für eigene Chunk-IO? Davon hängt ab, ob <Ref id="island-storage" /> die saubere Variante B fahren kann oder auf Archive zurückfällt — das ist die technisch wichtigste offene Frage an die Plattform.</Open>

@@ -1,0 +1,50 @@
+---
+id: island-allocator
+title: Insel-Zuweisung
+summary: Welcher Prozess hält welche Insel, wann wird geladen und wann entladen.
+status: draft
+pillar: island
+release: v1
+order: 280
+updated: 2026-09-14
+depends_on: [island-core]
+uses: [surf-queue]
+tags: [island, infrastruktur]
+---
+
+## Aufgabe
+
+Eine Insel muss zu jedem Zeitpunkt auf **höchstens einem** Prozess geladen sein. Der Allocator entscheidet, auf welchem, und sorgt dafür, dass Spieler dort landen.
+
+## Ablauf
+
+```
+Spieler will auf Insel X
+  → Allocator: ist X geladen?
+      ja   → Prozess zurückgeben
+      nein → Prozess mit freier Kapazität wählen
+           → Ladeauftrag senden, auf Bereitschaft warten
+  → Proxy sendet den Spieler dorthin
+```
+
+Entladen passiert nach einer Leerlaufzeit (Vorschlag: 5 Minuten ohne Besucher), damit ein kurzer Wechsel keinen teuren Neuladevorgang auslöst.
+
+## Warteschlange
+
+Ist kein Gameserver mit freier Kapazität da, wandert der Spieler in eine Warteschlange statt eine Fehlermeldung zu bekommen — dafür ist [surf-queue](https://github.com/SLNE-Development/surf-queue) da. Gewartet wird im Hub, also an einem Ort, an dem man währenddessen etwas tun kann: Markt ansehen, Skills prüfen, Clan-Chat.
+
+## Zuweisungsregeln
+
+- **Clan-Inseln bevorzugt zusammenlegen.** Mitglieder besuchen sich gegenseitig; auf demselben Prozess spart das Serverwechsel.
+- **Kapazität nach Tick-Budget, nicht nach Insel-Anzahl.** Eine Insel mit 300 Maschinen kostet so viel wie zwanzig leere — siehe <Ref id="multiblock-tick-budget" />.
+- **Keine Rebalancierung im laufenden Betrieb.** Eine geladene Insel bleibt, wo sie ist, bis sie leer ist. Umziehen unter laufendem Betrieb ist eine Fehlerquelle ohne echten Nutzen.
+
+## Ausfall
+
+Fällt ein Prozess aus, gelten seine Inseln nach Ablauf des Heartbeats als nicht geladen und können neu zugewiesen werden. Der Zustand wird aus dem letzten Snapshot wiederhergestellt — es kann also bis zu ein Flush-Intervall Fortschritt fehlen, siehe <Ref id="adr-007-persistence" />.
+
+<Note type="info" title="Hängt an ADR-001">
+  Wie teuer Laden und Entladen sind, entscheidet <Ref id="adr-001-world-hosting" /> — bei
+  Minestom-Instanzen sind es Millisekunden, bei Paper-Welten Sekunden. Die Leerlaufzeit und die
+  Kapazitätsgrenzen sind erst danach sinnvoll zu beziffern.
+</Note>

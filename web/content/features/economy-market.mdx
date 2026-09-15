@@ -1,0 +1,58 @@
+---
+id: economy-market
+title: Auktionshaus & Bazaar
+summary: Handel zwischen Spielern — Einzelstücke per Auktion, Massenware per Orderbuch.
+status: draft
+pillar: economy
+release: v1
+order: 610
+updated: 2026-09-14
+depends_on: [economy-core, rpg-items]
+tags: [wirtschaft, handel]
+---
+
+## Einordnung
+
+Dies ist der **Spieler-zu-Spieler**-Handel. Den Ankauf durch den Server mit dynamischen Preisen beschreibt <Ref id="economy-server-market" /> — die beiden hängen zusammen: Der Server zahlt bewusst weniger, damit dieser Markt hier der attraktivere Weg bleibt.
+
+## Zwei Systeme, zwei Zwecke
+
+**Auktionshaus** für Einzelstücke mit Eigenschaften — ein Schwert mit bestimmter Aufwertung. Suchen, Gebote, Sofortkauf, Laufzeit.
+
+**Bazaar** für Massenware ohne Eigenschaften — Kohle, Eisen, produzierte Güter. Orderbuch mit Kauf- und Verkaufsaufträgen, sofortige Ausführung zum besten Preis.
+
+Die Trennung ist wichtig: Ein Auktionshaus mit 40.000 identischen Eisenbarren ist unbenutzbar, und ein Orderbuch kann Items mit individuellen Eigenschaften nicht zusammenfassen.
+
+In V1 kommt zunächst das Auktionshaus; der Bazaar folgt, sobald genug Massenware im Umlauf ist, dass ein Orderbuch überhaupt Tiefe hat.
+
+## Bazaar-Mechanik
+
+```
+Kauforder:    Menge + Höchstpreis  → wartet, bis jemand darunter verkauft
+Verkaufsorder: Menge + Mindestpreis → wartet, bis jemand darüber kauft
+Sofortkauf:   nimmt die günstigste offene Verkaufsorder
+```
+
+Ausführung streng nach Preis, bei gleichem Preis nach Zeit. Alles andere wird von Spielern innerhalb von Tagen als unfair erkannt und ausgenutzt.
+
+## Technik
+
+Das Orderbuch liegt im `economy`-Service und wird transaktional geführt. Ein Abgleich ist eine Datenbanktransaktion: Order reduzieren, Gegenorder reduzieren, Geld und Ware buchen — alles oder nichts.
+
+Bei hohem Volumen wandern die Abgleiche in eine Warteschlange (BullMQ, wie im bestehenden Stack), damit Spitzen den Service nicht blockieren.
+
+## Gebühren
+
+Prozentual auf jeden Verkauf, vollständig vernichtet. Das ist die tragende Geldsenke aus <Ref id="economy-core" />.
+
+## Missbrauch
+
+- **Preismanipulation** durch Eigenhandel: Handel mit sich selbst und zwischen bekannten Zweitaccounts wird erkannt und blockiert.
+- **Marktecken**: Eine Obergrenze für offene Orders pro Spieler und Ware.
+- **Geldwäsche**: Auffällige Muster (Verkauf weit über Marktpreis) landen in einem Prüfbericht.
+
+<Note type="warning" title="Vor dem Livegang">
+  Alle drei Missbrauchsformen treten garantiert auf, nicht vielleicht. Die Erkennung gehört vor dem
+  Start eingebaut, nicht als Reaktion — bis dahin ist der Schaden verteilt und kaum rückgängig zu
+  machen.
+</Note>

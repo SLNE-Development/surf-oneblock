@@ -1,0 +1,48 @@
+---
+id: rpg-skills
+title: Skills & Collections
+summary: Langfristige Progression durch Tun — Abbauen, Kämpfen, Produzieren machen dauerhaft stärker.
+status: spec
+pillar: rpg
+release: v1
+order: 530
+updated: 2026-09-14
+depends_on: [rpg-stats, platform-events]
+uses: [surf-skills]
+tags: [rpg, progression]
+---
+
+## Skills in V1
+
+| Skill | XP-Quelle | Belohnung |
+| --- | --- | --- |
+| Mining | Block abbauen | Mining Speed, Fortune, Rezepte |
+| Combat | Mobs töten | Strength, Crit Chance |
+| Foraging | Holz, Farmen | Health, Farm-Erträge |
+| Engineering | Maschinen bauen und betreiben | Maschinentempo, Energieeffizienz |
+
+Engineering ist der wichtigste von den vieren, weil er der einzige ist, der den Wirtschaftsstrang direkt belohnt. Ohne ihn ist die RPG-Schiene nur an den Kampf gekoppelt.
+
+## Kurve
+
+Exponentiell, etwa 1,15× pro Stufe (siehe <Ref id="balancing" />). Stufe 1–10 geht schnell, damit früh etwas passiert; ab Stufe 30 wird es zum Langzeitziel.
+
+Jede Stufe gibt einen kleinen Stat-Bonus, jede fünfte etwas Spürbares — ein Rezept, eine Freischaltung, einen Perk. Kleine Schritte halten die Anzeige lebendig, große Schritte geben die Erinnerung.
+
+## Collections
+
+Ein Zähler pro Material: Wie viel hat der Spieler je davon gesammelt? Collections schalten Rezepte frei und sind der zweite, langsamere Progressionsstrang neben den Skills.
+
+Der Unterschied ist wichtig: Skills belohnen **Aktivität**, Collections belohnen **Breite**. Wer nur eine Sache macht, steigt in einem Skill schnell und bleibt in den Collections zurück.
+
+## Was schon da ist
+
+[surf-skills](https://github.com/SLNE-Development/surf-skills) bringt Skills mit XP bereits mit. Die offene Frage ist die Kopplung an <Ref id="rpg-stats" />: Ob es Boni über einen Contribution-Point an ein fremdes Stat-System abgeben kann, oder ob es selbst rechnet. Im zweiten Fall braucht es eine Brücke, damit es genau **eine** Stat-Berechnung im Modus gibt und nicht zwei, die sich gegenseitig multiplizieren.
+
+## Technik
+
+XP-Vergabe hängt an Events aus <Ref id="platform-events" /> — <Ref id="oneblock-core" /> weiß nichts von Skills. Die Werte liegen im RAM, Änderungen gehen als Deltas in die Outbox (<Ref id="platform-profile" />).
+
+Ein Spieler bricht mehrere Blöcke pro Sekunde: Die XP-Vergabe darf keine Allokation und keine Neuberechnung von Stats auslösen. Stats werden nur beim Stufenaufstieg neu gerechnet, nicht bei jedem XP-Punkt.
+
+<Open>Sollen Skills zurücksetzbar sein (gegen Bezahlung), um umzuverteilen? Passt zum Optimierer-Typ und ist schwer zu balancen, solange Skills keine Wahlmöglichkeiten haben.</Open>

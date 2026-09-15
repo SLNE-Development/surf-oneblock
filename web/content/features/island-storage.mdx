@@ -1,0 +1,93 @@
+---
+id: island-storage
+title: Weltenspeicherung
+summary: Wie Inselwelten gespeichert werden, wenn sie nicht in einem worlds-Ordner liegen können — Objektspeicher als Wahrheit, lokale Platte als Cache.
+status: spec
+pillar: island
+release: v1
+order: 255
+updated: 2026-09-14
+depends_on: [island-core, island-allocator]
+tags: [island, persistenz, infrastruktur]
+---
+
+## Das Problem
+
+Vanilla legt eine Welt als Region-Dateien im `worlds/`-Ordner *des einen Servers* ab, der sie gestartet hat. Bei mehreren Gameservern und mehreren tausend Inseln bricht das an drei Stellen:
+
+- Eine Insel muss auf **jedem** Gameserver ladbar sein, nicht nur auf dem, der sie erstellt hat.
+- Zwei Prozesse dürfen dieselbe Insel **nie** gleichzeitig offen haben — sonst überschreibt der eine die Arbeit des anderen beim Speichern.
+- Lokale Platten sind bei einem Prozess, der jederzeit ersetzt werden kann, keine Wahrheit. Ein neues Deployment darf keine Welt mitnehmen.
+
+## Die drei Ebenen
+
+```
+Wahrheit    Objektspeicher (MinIO/S3, selbst gehostet)  ← hier liegt die Welt
+Metadaten   Postgres: welche Insel, welche Version, wer hält das Lease
+Cache       lokale Platte des Gameservers, jederzeit wegwerfbar
+```
+
+Die lokale Platte ist **immer nur Cache**. Geht ein Gameserver verloren, geht nichts verloren, was geflusht war.
+
+## Zwei Speicherformen
+
+### A — Archiv pro Insel
+
+Eine Insel ist eine kleine Welt fester Größe. Beim Laden wird ein komprimiertes Archiv aus dem Objektspeicher geholt und lokal ausgepackt, beim Entladen gespeichert, gepackt und hochgeladen.
+
+**Dafür:** Funktioniert mit jeder Serversoftware, ohne dass man die Chunk-IO anfasst. Snapshots sind mit Objektversionierung praktisch gratis.
+
+**Dagegen:** Ladezeit und Schreibmenge hängen an der Inselgröße, nicht an der tatsächlich besuchten Fläche. Eine 30-MB-Insel kostet bei jedem Betreten spürbar Zeit, auch wenn sich nur ein Block geändert hat.
+
+### B — Chunk-Store
+
+Die Chunk-IO wird ersetzt: Ein Chunk lesen heißt ein Objekt holen, ein Chunk schreiben heißt ein Objekt schreiben. Geschrieben wird nur, was sich geändert hat.
+
+```
+Schlüssel:  island/<id>/tile/<tx>_<tz>          ein Objekt = 8×8 Chunks
+Wert:       zstd-komprimierte Chunkdaten
+```
+
+Kacheln statt einzelner Chunks, weil ein Objektspeicher mit sehr vielen sehr kleinen Objekten schlecht umgeht — 8×8 ist ein brauchbarer Kompromiss zwischen Anzahl und Übertragungsgröße.
+
+**Dafür:** Laden ist praktisch sofort und unabhängig von der Inselgröße; es kommt nur, was betreten wird. Geschrieben wird nur, was schmutzig ist.
+
+**Dagegen:** Braucht einen Eingriffspunkt in der Serversoftware. Minestom bringt den mit (`IChunkLoader`), bei der Paper-Linie ist das Chunk-System deutlich tiefer verbaut.
+
+## Empfehlung
+
+**B, wo die Plattform es zulässt; A als Rückfall.** Die Hubs auf Minestom brauchen ohnehin keine Persistenz — ihre Welten sind statisch. Für die Gameserver hängt es an der offenen Frage in <Ref id="adr-001-world-hosting" />, ob Universe eigene Chunk-IO erlaubt.
+
+Solange das nicht geklärt ist, ist A der sichere Weg und kostet keine verlorene Arbeit: Die Grenze zwischen „Welt laden" und „Welt bereitstellen" liegt so oder so im Allocator, und der Wechsel von A nach B tauscht nur die Implementierung dahinter aus.
+
+## Das Lease ist der wichtigste Teil
+
+Genau ein Prozess darf eine Insel offen haben — dieselbe Mechanik wie beim Spielerprofil in <Ref id="platform-profile" />:
+
+```
+island_lease(island_id, process_id, expires_at)
+  Heartbeat alle 10 s, Ablauf nach 30 s
+  kein Lease → kein Schreiben, kein Laden
+```
+
+Stürzt ein Prozess ab, während er ein Lease hält, ist die Insel bis zum Ablauf nicht betretbar. Das ist der bessere Fehlerfall: Eine kurze Wartezeit ist ärgerlich, zwei divergierende Kopien derselben Insel sind ein Datenverlust, den niemand mehr auflösen kann.
+
+## Snapshots
+
+Vor jedem Entladen und einmal täglich eine versionierte Kopie, sieben Tage Aufbewahrung. Bei Objektversionierung kostet das fast nichts und erledigt den häufigsten Supportfall — Rollback nach Griefing — ohne Datenbankeingriff. Zurückspielen läuft über <Ref id="ops-admin-tools" />, nie von Hand.
+
+## Was nicht so gespeichert wird
+
+Öffentliche Welten — Hub, Dungeons, Zonen — sind statisch und kommen als Artefakt ins Image. Sie werden nie zurückgeschrieben. Nur Inseln sind veränderlich, und nur sie brauchen diesen ganzen Apparat.
+
+## Größenordnung
+
+Eine halb bebaute Insel von 512×512 liegt komprimiert grob bei 5–20 MB. Bei 5.000 Inseln sind das 25–100 GB — für Objektspeicher keine Zahl, über die man nachdenken muss. Mit Chunk-Granularität werden davon pro Besuch typischerweise nur ein paar hundert Chunks angefasst.
+
+<Note type="info" title="Die Inselgröße ist eine Speicherentscheidung">
+  Eine feste, eher kleine Inselfläche hält dieses ganze System billig. Unbegrenzt wachsende Inseln
+  würden Ladezeit, Snapshot-Kosten und Tick-Budget gleichzeitig nach oben ziehen — siehe
+  <Ref id="island-core" />.
+</Note>
+
+<Open>Wie oft werden schmutzige Chunks geflusht, solange eine Insel offen ist? Zu selten heißt mehr Verlust bei Absturz, zu oft heißt dauernder Upload. Alle 60 s plus bei Spielerabgang wäre ein Startwert.</Open>

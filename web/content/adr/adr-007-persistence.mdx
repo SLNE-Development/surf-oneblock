@@ -1,0 +1,54 @@
+---
+id: adr-007-persistence
+title: ADR-007 — Datenhaltung und Spielerstand
+summary: Eine Postgres-Datenbank mit einem Schema pro Service, autoritativer Zustand im Gameserver, Leases gegen Duplikation. Entschieden.
+status: spec
+decision: Eine Postgres-Datenbank, ein Schema pro Service; der Gameserver hält den Spielerzustand autoritativ und sichert ihn über ein Lease ab.
+updated: 2026-09-14
+order: 7
+tags: [persistenz, architektur]
+---
+
+## Entscheidung
+
+- **Eine Postgres-Datenbank**, darin **ein Schema pro Service**. Kein geteiltes Schema, aber auch kein Cluster aus Einzeldatenbanken.
+- **Der Gameserver ist autoritativ**, solange ein Spieler online ist. Services sind Wahrheit für alles, was der Prozess nicht hält.
+- **Leases** verhindern, dass zwei Prozesse denselben Spieler oder dieselbe Insel schreiben.
+- **Zeitreihen** (Produktionsmengen, Marktpreise, Wirtschaftskennzahlen) nach TimescaleDB.
+
+## Warum ein Schema statt einer Datenbank pro Service
+
+Die reine Lehre verlangt eine eigene Datenbank pro Service. Für ein Team dieser Größe ist das mehr Betrieb als Nutzen: eine Instanz zu sichern, zu überwachen und zu aktualisieren statt sechs.
+
+Schemas erhalten dabei das, worauf es wirklich ankommt: **Ein Service greift nur auf sein eigenes Schema zu**, durchgesetzt über Datenbank-Rollen, nicht über Disziplin. Wer Fremddaten braucht, ruft den zuständigen Service auf.
+
+Der Preis ist ehrlich zu benennen: Alle Services teilen sich Verbindungen, IO und Ausfall. Eine Abfrage, die die Datenbank belastet, trifft alle. Dagegen helfen getrennte Rollen mit eigenen Verbindungspools und Grenzen pro Rolle — und falls ein Service später wirklich ein anderes Lastprofil entwickelt (Kandidat: das Bazaar-Orderbuch), lässt sich genau dieses Schema herausziehen, ohne die anderen anzufassen.
+
+<Note type="warning" title="Eine Regel, die früh verletzt wird">
+  Ein Join über Schemagrenzen ist technisch möglich und deshalb verlockend. Genau das macht die
+  Trennung wertlos: Ab dem ersten solchen Join lässt sich kein Schema mehr einzeln herausziehen.
+  Die Datenbank-Rollen müssen das von Anfang an verhindern.
+</Note>
+
+## Leases
+
+Ein Lease ist das exklusive Schreibrecht, gehalten für 30 Sekunden und alle 10 Sekunden erneuert — für Spielerprofile (<Ref id="platform-profile" />) und für Inselwelten (<Ref id="island-storage" />).
+
+Optimistisches Sperren wäre die Alternative, erkennt den Konflikt aber erst beim Schreiben — zu spät, weil bis dahin beide Prozesse dem Spieler bereits Items gezeigt haben. Ein Lease verhindert die zweite Session von vornherein.
+
+## Flush-Strategie
+
+| Was | Wie geschrieben |
+| --- | --- |
+| Skill-XP, Collections, Statistiken | Delta in der Outbox, Flush alle 15 s |
+| Inventar, Insel-Blöcke | bei Leave, Insel-Wechsel, Shutdown |
+| Wirtschaftstransaktionen | synchron, mit Bestätigung, nie gepuffert |
+| Bazaar-Orders und Server-Markt | synchron, transaktional im `economy`-Schema |
+
+Die Trennlinie: Alles, was ein Spieler als Besitz wahrnimmt und handeln kann, wird synchron geschrieben. Alles, was nur wächst, darf gepuffert werden.
+
+## Migrationen
+
+Migrationen laufen vor dem Deploy und müssen abwärtskompatibel sein — mit einer gemeinsamen Datenbank gilt das zusätzlich schemaübergreifend: Während eines Rollouts laufen alte und neue Prozesse gleichzeitig gegen dieselbe Instanz. Details in <Ref id="ops-migrations" />.
+
+<Open>Braucht das Web-Hub eine Read-Replica? Bei einer gemeinsamen Instanz ist es der wahrscheinlichste Kandidat, den Gameplay auszubremsen.</Open>

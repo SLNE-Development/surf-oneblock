@@ -1,0 +1,42 @@
+---
+id: clan-island
+title: Clan-Insel
+summary: Eine gemeinsame Insel mit mehreren Block-Slots, geteilter Infrastruktur und gemeinsamem Lager.
+status: spec
+pillar: clans
+release: v1
+order: 310
+updated: 2026-09-13
+depends_on: [island-core, clan-bridge, island-permissions]
+tags: [clans, island]
+---
+
+## Was sie von einer Spieler-Insel unterscheidet
+
+| | Spieler-Insel | Clan-Insel |
+| --- | --- | --- |
+| Besitzer | ein Spieler | der Clan |
+| Slots | 1, wächst mit Ausbau | mehrere, wächst mit Clan-Level |
+| Lager | privat | gemeinsam, mit Rechten |
+| Energie | eigenes Netz | geteiltes Netz |
+| Abgabe | — | optional auf Erträge |
+
+Der eigentliche Anreiz ist nicht der Platz, sondern die **geteilte Infrastruktur**: Ein Energienetz, eine Maschinenkette, ein Lager. Fünf Spieler auf einer Clan-Insel bauen zusammen Dinge, die allein nicht möglich wären.
+
+## Einladung
+
+Ein Slot wird explizit vergeben, nicht durch Clan-Mitgliedschaft. Verwalter laden ein, der Eingeladene nimmt an und platziert seinen Block — siehe <Ref id="island-placement" />. Slots sind knapp, und das ist Absicht: Es macht die Einladung zu einer Entscheidung, die im Clan besprochen wird.
+
+## Gemeinsames Lager
+
+Ein Lager mit Rechten pro Rolle, Protokoll über Ein- und Auslagerung und optional Limits pro Spieler und Tag. Das Protokoll ist nicht optional — gemeinsames Lager ohne Protokoll ist die häufigste Ursache für Clan-Streit.
+
+## Abgabe
+
+Der Clan kann einen Prozentsatz auf Erträge festlegen, die auf seiner Insel entstehen. Er fließt ins Clan-Lager. Sichtbar vor dem Platzieren, Erhöhungen erst nach Ankündigungsfrist wirksam.
+
+## Geteiltes Energienetz
+
+Maschinen auf einer Clan-Insel hängen am selben Netz (siehe <Ref id="multiblock-energy" />). Das ist der stärkste Kooperationsanreiz im ganzen Modus — und zugleich eine Konfliktquelle, wenn einer mehr entnimmt als beiträgt. Deshalb: Verbrauch pro Spieler sichtbar machen.
+
+<Open>Sollen Clan-Inseln mehrere getrennte Bereiche haben können, damit nicht jeder in jedes Bauprojekt eingreifen kann?</Open>

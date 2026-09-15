@@ -1,0 +1,32 @@
+---
+id: adr-006-ownership
+title: ADR-006 — Block gehört dem Spieler, Insel ist der Ort
+summary: Der OneBlock ist an den Spieler gebunden und wird auf einem Insel-Slot platziert. Entschieden.
+status: spec
+decision: Ein Block gehört genau einem Spieler und ist portabel; Inseln sind Grundstücke mit Slots, die einem Spieler oder einem Clan gehören.
+updated: 2026-09-13
+order: 6
+tags: [core, island, clans]
+---
+
+## Entscheidung
+
+- Jeder Spieler besitzt **genau einen** OneBlock. Der Block trägt seine Phase, seinen Fortschritt und seine Statistik.
+- Der Block steht auf einem **Slot** einer Insel. Inseln entstehen aus Presets und gehören einem Spieler oder einem Clan.
+- Auf einer Clan-Insel kann ein Spieler seinen Block nur platzieren, wenn er **explizit eingeladen** wurde.
+- Ein Spieler kann seinen Block umsetzen. Der Fortschritt bleibt dabei vollständig erhalten.
+
+## Warum das gut funktioniert
+
+Es löst das Grundproblem von Clan-Skyblock-Modi: Wenn Progression am Clan hängt, sind Spieler entweder chancenlos allein oder austauschbar im Clan. Hier ist die Progression persönlich und der Clan liefert Ort, Infrastruktur und Boni. Ein Clan-Austritt kostet den Standort, nicht das Erreichte.
+
+Nebeneffekt: Einladung wird zu einer echten Entscheidung. Ein Slot auf einer guten Clan-Insel ist wertvoll, weil er knapp ist.
+
+## Konsequenzen
+
+- Der Block ist ein eigenständiges Objekt mit eigener Identität, kein Attribut der Insel — siehe <Ref id="oneblock-core" />.
+- Umsetzen braucht eine Abklingzeit, sonst wird der beste Clan-Bonus im Minutentakt abgegriffen.
+- Es braucht eine klare Regel, wem der Ertrag gehört, der auf fremdem Grund entsteht: Er gehört dem Block-Besitzer. Der Insel-Besitzer kann optional eine Abgabe festlegen — siehe <Ref id="clan-island" />.
+- Wird ein Spieler aus einem Clan entfernt, muss sein Block samt Inhalt sicher zurückfallen, ohne dass etwas verloren geht — siehe <Ref id="island-permissions" />.
+
+<Open>Darf ein Spieler mehrere Blöcke besitzen, wenn er sie kauft? Nein wäre konsistent zur Pay-to-win-Grenze in <Ref id="balancing" />, aber die Frage kommt garantiert.</Open>

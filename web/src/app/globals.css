@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+/*
+ * Farbrollen nach eurer Konvention: primary, secondary, accent,
+ * info, success, warning, error. Kein "destructive".
+ */
+@theme {
+  --color-surface-0: oklch(0.17 0.012 260);
+  --color-surface-1: oklch(0.21 0.013 260);
+  --color-surface-2: oklch(0.25 0.014 260);
+  --color-surface-3: oklch(0.31 0.016 260);
+
+  --color-line: oklch(0.32 0.016 260);
+  --color-line-strong: oklch(0.42 0.02 260);
+
+  --color-text: oklch(0.95 0.005 260);
+  --color-muted: oklch(0.72 0.014 260);
+  --color-faint: oklch(0.58 0.014 260);
+
+  --color-primary: oklch(0.74 0.15 155);
+  --color-primary-soft: oklch(0.34 0.07 155);
+  --color-secondary: oklch(0.72 0.09 255);
+  --color-accent: oklch(0.78 0.14 85);
+
+  --color-info: oklch(0.72 0.12 240);
+  --color-success: oklch(0.76 0.15 150);
+  --color-warning: oklch(0.80 0.13 80);
+  --color-error: oklch(0.68 0.17 25);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-surface-0);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-primary-soft);
+}
+
+/* Scrollbars dezent halten */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-3) transparent;
+}
+
+/* ------------------------------------------------------------------ *
+ * Prose — Styling für gerendertes MDX
+ * ------------------------------------------------------------------ */
+
+.prose {
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+
+.prose > * + * {
+  margin-top: 1.05rem;
+}
+
+.prose h2 {
+  margin-top: 2.75rem;
+  margin-bottom: 0.25rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  scroll-margin-top: 6rem;
+}
+
+.prose h3 {
+  margin-top: 1.9rem;
+  margin-bottom: 0.1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  scroll-margin-top: 6rem;
+}
+
+.prose h4 {
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.prose p,
+.prose li {
+  color: var(--color-muted);
+}
+
+.prose strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.prose a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+.prose a:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.2rem;
+}
+
+.prose ul {
+  list-style: disc;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose li::marker {
+  color: var(--color-faint);
+}
+
+.prose li + li {
+  margin-top: 0.35rem;
+}
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.33rem;
+  color: var(--color-text);
+}
+
+.prose pre {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-line);
+  border-radius: 0.7rem;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.prose pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+.prose blockquote {
+  border-left: 2px solid var(--color-primary);
+  padding: 0.15rem 0 0.15rem 1rem;
+  color: var(--color-muted);
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  margin: 2.25rem 0;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--color-line);
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  background: var(--color-surface-1);
+  color: var(--color-text);
+  font-weight: 600;
+  white-space: nowrap;
+}

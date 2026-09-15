@@ -1,0 +1,67 @@
+---
+id: platform-module-spi
+title: Modulsystem & SPI-Loader
+summary: Das Fundament — Module werden entdeckt, in fester Reihenfolge geladen und lassen sich einzeln abschalten.
+status: spec
+pillar: platform
+release: v1
+order: 100
+updated: 2026-09-14
+uses: [surf-api, mistra]
+tags: [spi, fundament]
+---
+
+## Ziel
+
+Ein Feature soll eine Datei im Build sein, die man hinzufügen oder weglassen kann, ohne anderswo etwas zu ändern. Das ist die technische Voraussetzung dafür, Features nach und nach rauszubringen — alles andere in dieser Doku setzt es voraus.
+
+## Was schon da ist
+
+Das muss nicht neu entstehen. [surf-api](https://github.com/SLNE-Development/surf-api) bringt genau das mit — modulare Service Discovery, Komponenten mit verwaltetem Lebenszyklus und eine NMS-Bridge über mehrere Plattformen. Auf der Minestom-Seite übernimmt [mistra](https://github.com/SLNE-Development/mistra) das Laden mit isolierten, aber kombinierbaren Classloadern.
+
+Die Arbeit hier ist damit **Anpassung statt Neubau**: die Modul-Konventionen dieses Modus auf surf-api abbilden und prüfen, ob Lade- und Abschaltverhalten die Garantien unten wirklich hergeben.
+
+## Wie es funktioniert
+
+Beim Start werden Implementierungen von `GameModule` entdeckt, ihre Metadaten gelesen und aus `dependsOn` und `softDependsOn` ein gerichteter Graph gebaut, der in topologischer Reihenfolge geladen wird. Ein Zyklus ist ein Startfehler, kein Warnhinweis.
+
+Die Phasen und Regeln stehen in <Ref id="module-contract" />.
+
+## Was der Loader garantiert
+
+- **Deterministische Reihenfolge.** Gleicher Classpath, gleiche Reihenfolge — auch bei gleichrangigen Modulen (Tiebreak über die Modul-ID).
+- **Fail-fast beim Start, nie zur Laufzeit.** Ein Modul mit unerfüllter harter Abhängigkeit verhindert den Start. Es gibt keinen halb geladenen Modus.
+- **Isolierte Fehler in `enable`.** Wirft ein Modul beim Aktivieren, wird es deaktiviert und der Rest läuft weiter — mit einer deutlichen Meldung im Log und im Admin-Werkzeug.
+- **Sauberes Herunterfahren** in umgekehrter Ladereihenfolge, damit ein Modul beim Flush noch auf seine Abhängigkeiten zugreifen kann.
+
+## Schnittstelle
+
+```kotlin
+interface GameModule {
+    fun configure(ctx: ConfigureContext) {}
+    fun register(ctx: RegisterContext) {}
+    fun link(ctx: LinkContext) {}
+    fun enable(ctx: RuntimeContext) {}
+    fun disable(ctx: RuntimeContext) {}
+}
+```
+
+Die Kontexte sind absichtlich unterschiedlich: Ein Modul kann in `register` gar nicht erst auf andere Module zugreifen, weil der Kontext die Methoden nicht anbietet. Konventionen, die der Compiler durchsetzt, halten länger als Konventionen in einem Wiki.
+
+## Plattformneutralität
+
+Der Modus läuft dauerhaft auf zwei Plattformen (<Ref id="adr-001-world-hosting" />), die Regel gilt also nicht übergangsweise, sondern für immer: Kein Modul außerhalb von `adapter-*` importiert Bukkit- oder Minestom-Typen. Der Loader stellt dafür neutrale Abstraktionen bereit — `World`, `Position`, `PlayerRef`, `Scheduler`. Ein CI-Check auf verbotene Imports setzt das durch; freiwillig funktioniert das erfahrungsgemäß nicht.
+
+## Offene Punkte
+
+## Threadsicherheit
+
+Sobald UniverseSpigot mehrere Welten parallel tickt, laufen Modul-Handler gleichzeitig. Für den Modul-Vertrag heißt das: Zustand, der über Inselgrenzen hinweg geteilt wird — Registries, Caches, Zähler —, ist entweder unveränderlich oder explizit synchronisiert. Zustand innerhalb einer Insel bleibt single-threaded und braucht keine Sperren.
+
+<Note type="warning" title="Zu prüfen">
+  Ob surf-api und die darauf aufbauenden Module diese Annahme heute schon erfüllen, ist offen. Sie
+  sind für eine Welt pro Tick-Thread gebaut worden; das gehört geprüft, bevor parallele Welt-Ticks
+  eingeschaltet werden — siehe <Ref id="existing-systems" />.
+</Note>
+
+<Open>Sollen Module zur Laufzeit nachladbar sein (Hot-Reload) oder reicht ein Neustart? Hot-Reload ist bequem in der Entwicklung und eine dauerhafte Quelle für Speicherlecks in Produktion.</Open>

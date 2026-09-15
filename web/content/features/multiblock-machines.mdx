@@ -1,0 +1,66 @@
+---
+id: multiblock-machines
+title: Maschinen & Rezepte
+summary: Was eine Struktur tut — Eingabe, Verarbeitung, Ausgabe, Upgrades und Offline-Produktion.
+status: spec
+pillar: multiblock
+release: v1
+order: 410
+updated: 2026-09-14
+depends_on: [multiblock-engine, platform-registry, multiblock-energy]
+tags: [multiblock, wirtschaft]
+---
+
+## Modell
+
+Eine Maschine ist eine Struktur mit Rezeptliste, Eingabe- und Ausgabepuffer, Energiebedarf und Upgrade-Stufe.
+
+```yaml
+id: basic_crusher
+structure: basic_crusher
+tier: 1
+energy_per_op: 4
+recipes:
+  - { in: "minecraft:cobblestone x8", out: "minecraft:gravel x8", ticks: 40 }
+  - { in: "minecraft:gravel x8",      out: "minecraft:sand x8",   ticks: 40 }
+upgrades:
+  2: { speed: 1.25, energy: 1.2, cost: "..." }
+  3: { speed: 1.55, energy: 1.45, cost: "..." }
+```
+
+Ertrag wächst pro Stufe stärker als Kosten (~1,25× zu ~1,2×) — Optimieren muss sich lohnen, siehe <Ref id="balancing" />.
+
+## Verarbeitungsschleife
+
+```
+Eingabe vorhanden?  → nein: schlafen, kein Tick
+Energie verfügbar?  → nein: pausieren, Zustand "Energie fehlt"
+Ausgabe hat Platz?  → nein: pausieren, Zustand "Ausgabe voll"
+                    → Fortschritt erhöhen
+Fertig?             → Ausgabe schreiben, MachineFinishedEvent
+```
+
+Der wichtigste Punkt ist die erste Zeile: Eine Maschine ohne Arbeit wird **nicht getickt**. Sie hängt in keiner Tick-Liste, bis ihr Eingabepuffer etwas bekommt. Auf einer typischen Insel schläft die Mehrheit der Maschinen die meiste Zeit, und nur dadurch ist das Tick-Budget einhaltbar.
+
+## Zustände sichtbar machen
+
+"Energie fehlt", "Ausgabe voll", "Struktur beschädigt", "kein Rezept" gehören als Anzeige an die Maschine — Partikel, Farbe am Kern, Text im Menü. Eine stehende Maschine ohne erkennbaren Grund ist die häufigste Supportfrage in Modi dieser Art.
+
+## Anwesenheit statt Offline-Produktion
+
+Maschinen laufen nur, solange die Insel geladen ist. Es gibt **keine** Offline-Produktion und **keine** Nachberechnung beim Laden — siehe <Ref id="balancing" />.
+
+```
+Insel wird entladen  → alle Maschinen pausieren, Zustand wird gespeichert
+Insel wird geladen   → Maschinen laufen exakt dort weiter, wo sie standen
+```
+
+Der Fortschrittszähler einer laufenden Maschine wird mitgespeichert, es geht also nichts verloren — es vergeht nur keine Zeit. Eine Maschine, die zu 70 % durch war, ist beim nächsten Besuch zu 70 % durch.
+
+Das vereinfacht die Implementierung erheblich: kein Zeitstempel-Vergleich, keine geschlossene Nachhol-Formel, keine Deckel, und vor allem keine Fehlerklasse, bei der die Nachrechnung mehr ausschüttet als der echte Tick es getan hätte. Der Ladevorgang einer Insel wird dadurch außerdem spürbar schneller, weil beim Betreten nichts gebucht werden muss.
+
+## Rezept-Freischaltung
+
+Rezepte sind an Collections und Block-Phasen gebunden — jede Phase bringt ein Material, das eine Maschinenstufe öffnet (siehe <Ref id="oneblock-phases" />). Das ist die Verzahnung zwischen Block und Wirtschaft, auf der die ganze Kernschleife steht.
+
+<Open>Dürfen Maschinen Rezepte automatisch wechseln, wenn die Eingabe wechselt, oder muss der Spieler eins wählen? Automatik ist bequem und macht Ketten schwerer durchschaubar.</Open>

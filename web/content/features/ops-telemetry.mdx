@@ -1,0 +1,48 @@
+---
+id: ops-telemetry
+title: Telemetrie & Dashboards
+summary: Was gemessen wird, damit Performance- und Balancing-Probleme auffallen, bevor Spieler sie melden.
+status: draft
+pillar: ops
+release: v1
+order: 710
+updated: 2026-09-14
+depends_on: [platform-events]
+uses: [surf-stats, surf-rabbitmq]
+tags: [betrieb, monitoring]
+---
+
+## Technisch
+
+| Kennzahl | Warum |
+| --- | --- |
+| Tick-Zeit pro Prozess und pro Insel | die zentrale Gesundheitszahl |
+| Event-Handler-Laufzeiten | zeigt, welches Modul den Tick kostet |
+| Aktive Strukturen und Netze pro Insel | Wachstumsverlauf |
+| Flush-Dauer und Outbox-Länge | Frühwarnung für Datenverlust |
+| Lease-Konflikte | Hinweis auf Duplikationsversuche |
+| Service-Latenzen | wo Netzwerk in den Hot Path gerutscht ist |
+
+## Spielerisch
+
+| Kennzahl | Warum |
+| --- | --- |
+| Geldmenge, Zufluss, Abfluss | Inflation erkennen |
+| Preisindex der Top-Waren | Marktgesundheit |
+| Phasenverteilung | Kommt die Progressionskurve hin? |
+| Abbruchpunkte in der Einstiegskette | wo neue Spieler aufgeben |
+| Verweildauer und Rückkehrquote | ob der Modus trägt |
+
+Die vierte Zeile ist die wertvollste und die, die am häufigsten fehlt: Sie sagt genau, welcher Quest zu schwer oder zu unklar ist.
+
+## Umsetzung
+
+[surf-stats](https://github.com/SLNE-Development/surf-stats) deckt die spielerische Hälfte mit Tracker und Dashboard bereits ab. Die technischen Kennzahlen — Tick-Zeit pro Insel, Handler-Laufzeiten, Outbox-Länge — kommen modusspezifisch dazu, weil sie an Systemen hängen, die es vorher nicht gab.
+
+Zeitreihen nach TimescaleDB (schon im Stack), Dashboards in Grafana. Spielereignisse gehen über surf-rabbitmq an einen Ingest-Worker, nicht direkt in die Datenbank — der Gameplay-Prozess darf für Telemetrie nie blockieren.
+
+## Warnmeldungen
+
+Nur auf Dinge, bei denen jemand handeln muss: Tick-Zeit über Schwelle, Outbox wächst, Service nicht erreichbar, Geldmenge springt um mehr als X % am Tag. Warnungen, die niemand beachtet, sind schlimmer als keine.
+
+<Open>Sollen Spieler Teile davon sehen (Marktpreise, Ranglisten, Phasenverteilung)? Transparenz ist beliebt und macht Marktmanipulation leichter planbar.</Open>

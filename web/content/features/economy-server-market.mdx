@@ -1,0 +1,99 @@
+---
+id: economy-server-market
+title: Server-Markt mit dynamischen Preisen
+summary: Der Server kauft Waren zu Preisen, die sich nach Angebot und Nachfrage bewegen — Preisuntergrenze, Geldhahn und Inflationsbremse in einem.
+status: draft
+pillar: economy
+release: v1
+order: 605
+updated: 2026-09-14
+depends_on: [economy-core]
+uses: [surf-transaction]
+tags: [wirtschaft, balancing, markt]
+---
+
+## Warum der Server mitspielen muss
+
+Reiner Spielerhandel funktioniert erst, wenn ein Markt Tiefe hat. Am Anfang und in den unteren Warenstufen ist er leer: Niemand kauft 10.000 Kopfstein, also ist früher Ertrag wertlos, und der Preis für alles wird von den wenigen Großspielern gemacht, die überhaupt handeln.
+
+Der Server-Markt löst das. Er ist **immer** Käufer, zu einem Preis, der sich bewegt. Damit hat jede Ware jederzeit einen Wert, und der Modus bekommt eine belastbare Preisuntergrenze — die Bezugsgröße, an der sich alle anderen Preise ausrichten.
+
+Vorbild ist das Marktsystem aus Altis Life: periodische Neuberechnung nach Angebot und Nachfrage, mit einem rotierenden Topprodukt.
+
+## Die drei Handelswege
+
+| Weg | Wer handelt | Wofür |
+| --- | --- | --- |
+| Server-Markt | Spieler → Server | Massenware, jederzeit, zu bewegtem Preis |
+| Bazaar | Spieler ↔ Spieler | Massenware, Orderbuch — siehe <Ref id="economy-market" /> |
+| Auktionshaus | Spieler ↔ Spieler | Einzelstücke mit Eigenschaften |
+
+Sie konkurrieren bewusst. Der Server zahlt spürbar weniger als der Bazaar (Richtwert 60–80 % des typischen Bazaar-Preises), damit Spielerhandel der attraktivere Weg bleibt und der Server nur der Ausweg ist, wenn niemand kauft.
+
+## Preisbildung
+
+Der Preis wird je Periode neu berechnet — Vorschlag 30 Minuten. Pro Ware:
+
+| Größe | Bedeutung |
+| --- | --- |
+| `basePrice` | Ankerwert aus dem Design |
+| `price` | aktueller Preis |
+| `volume` | in dieser Periode an den Server verkaufte Menge |
+| `expected` | erwartete Menge pro Periode |
+
+```
+ratio  = volume / expected
+faktor = clamp(1 + k × (1 − ratio), 1 − maxDown, 1 + maxUp)
+price  = clamp(price × faktor, floor, ceiling)
+```
+
+Startwerte zum Ausprobieren: `k = 0,08`, `maxDown = maxUp = 0,15`, `floor = 25 %` und `ceiling = 250 %` von `basePrice`.
+
+Das ergibt das gewünschte Verhalten:
+
+- Ware wurde **gar nicht** verkauft → `ratio = 0` → Preis steigt um bis zu 8 %. Vernachlässigte Waren erholen sich von selbst.
+- Ware wurde **wie erwartet** verkauft → Preis bleibt.
+- Ware wurde **doppelt so viel** verkauft → Preis fällt. Wer eine Ware in Masse ausstößt, drückt ihren eigenen Preis.
+
+<Note type="warning" title="Der Fehler, den fast jeder Nachbau macht">
+  `expected` muss mit der **aktiven Spielerzahl** skalieren, nicht fest sein. Sonst fallen alle Preise
+  dauerhaft, sobald der Server wächst, und steigen ins Absurde, wenn er schrumpft. Ein fester
+  Erwartungswert funktioniert genau so lange, wie die Spielerzahl konstant bleibt — also nie.
+</Note>
+
+## Sofortige Preiswirkung
+
+Eine rein periodische Berechnung lädt zum Dumping ein: Man sammelt alles und verkauft kurz vor Periodenende in einem Schlag zum noch hohen Preis.
+
+Gegenmittel ist ein Abschlag, der **innerhalb** der Periode mit der bereits verkauften Menge wächst und am Periodenende in die reguläre Rechnung aufgeht. Große Mengen auf einmal zu verkaufen wird dadurch progressiv schlechter — dasselbe Prinzip wie Slippage an einer echten Börse, und Spieler verstehen es sofort, weil sie es beim Verkaufen direkt sehen.
+
+## Topprodukt
+
+Pro Periode wird eine Ware zum **Topprodukt** bestimmt. Ihr Preis kann in dieser Periode nicht fallen und bekommt einen Aufschlag.
+
+Das leistet drei Dinge auf einmal: Es lenkt Aufmerksamkeit und macht jede Periode anders; es verteilt den Farm-Druck über das Warenspektrum statt auf die eine effizienteste Ware; und es ist ein soziales Ereignis, weil alle gleichzeitig dasselbe tun.
+
+Die Auswahl ist **nicht** gleichverteilt zufällig, sondern gewichtet zugunsten von Waren, deren Preis lange im Keller lag. Damit räumt der Mechanismus zugleich die Ladenhüter ab, statt nur Zufall zu sein.
+
+## Missbrauch
+
+| Muster | Gegenmittel |
+| --- | --- |
+| Ein Großspieler bestimmt allein den Preis | Verkaufslimit pro Spieler und Periode |
+| Zweitaccounts umgehen das Limit | Limit an Insel und Sitzung koppeln, Auffälligkeiten melden |
+| Arbitrage Server → Server | Der Server verkauft nur sehr wenig, und nie unter seinem eigenen Ankaufpreis |
+| Arbitrage Bazaar → Server | Entsteht von selbst nicht, weil der Server unter Bazaar-Niveau zahlt — bleibt aber zu überwachen |
+
+## Warum das gut zu diesem Modus passt
+
+Der Server-Ankauf ist der wichtigste **Geldhahn** im Spiel — hier entsteht Währung aus dem Nichts. Weil der Preis fällt, je mehr verkauft wird, reguliert sich dieser Hahn selbst. Das ist der eigentliche Grund, warum ein dynamischer Markt zu einem Produktionsmodus passt:
+
+Eine Fabrik, die eine einzige Ware maximiert, entwertet genau diese Ware. Breit aufgestellte Produktion schlägt schmale — und das ist exakt der Anreiz, den man sich bei Multiblock-Ketten wünscht. Der Markt erledigt einen Teil des Balancings, den man sonst von Hand nachziehen müsste.
+
+## Anzeige
+
+Preisverlauf je Ware über die letzten Perioden (die Zeitreihen liegen ohnehin in TimescaleDB, siehe <Ref id="ops-telemetry" />), Veränderung in Prozent, Topprodukt hervorgehoben, eigenes Restlimit sichtbar. Aus einer Zahl wird damit etwas, das man beobachtet — der halbe Reiz des Vorbilds lag genau darin.
+
+<Open>Wie viele Waren nimmt der Server an? Alles anzunehmen ist bequem und macht den Bazaar überflüssig; eine bewusst begrenzte Liste zwingt zum Spielerhandel, frustriert aber bei Nischenware.</Open>
+
+<Open>Soll der Preisverlauf öffentlich sein? Transparenz macht den Markt interessanter und Manipulation planbarer.</Open>

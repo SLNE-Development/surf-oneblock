@@ -1,0 +1,82 @@
+---
+id: architecture
+title: Architektur & Service-Schnitt
+summary: Vorschlag, was eigener Microservice wird und was SPI-Modul im Gameplay-Prozess bleibt — plus die Regel, nach der man das entscheidet.
+status: draft
+updated: 2026-09-13
+order: 20
+tags: [architektur, spi, microservices]
+---
+
+## Die eine Regel
+
+> **Alles, was pro Tick oder pro Spieleraktion entschieden wird, läuft im Gameplay-Prozess. Services besitzen Wahrheit, nicht Verhalten.**
+
+Ein Netzwerk-Roundtrip kostet im besten Fall ~1 ms, im schlechten 20. Bei 20 Ticks pro Sekunde und mehreren hundert Maschinen pro Insel ist jeder synchrone Service-Call im Hot Path ein Designfehler. Umgekehrt: Sobald zwei Gameplay-Prozesse denselben Zustand sehen müssen — Kontostand, Clan-Mitgliedschaft, Bazaar-Order — gehört dieser Zustand in einen Service.
+
+Das ist keine Geschmacksfrage, sondern das Kriterium, an dem sich jede Zuordnung unten entscheidet.
+
+## Vorschlag: der Schnitt
+
+### Eigene Services
+
+| Service | Besitzt | Warum eigener Service |
+| --- | --- | --- |
+| `identity` | Spielerprofil, Einstellungen, Cross-Mode-Daten | Wird von jedem Server gelesen, ändert sich selten |
+| `island` | Inseln, Mitgliedschaften, Presets, Allocator | Zuweisung muss global eindeutig sein |
+| `clan` | Adapter auf euer bestehendes Clansystem | Existiert schon, wird nur angebunden |
+| `economy` | Konten, Transaktionen, Bazaar-Orderbuch | Doppelbuchung darf nie passieren |
+| `progression` | Skills, Collections, Quest-Fortschritt | Write-heavy, aber nicht tick-nah |
+| `content` | Item-, Rezept-, Phasen-, Struktur-Definitionen | Read-mostly, versioniert, alle Server brauchen dieselbe Version |
+
+### SPI-Module im Gameplay-Prozess
+
+<Ref id="oneblock-core" />, <Ref id="oneblock-phases" />, <Ref id="multiblock-engine" />, <Ref id="multiblock-machines" />, <Ref id="multiblock-energy" />, <Ref id="multiblock-logistics" />, <Ref id="rpg-stats" />, <Ref id="rpg-damage" />, <Ref id="rpg-mobs" />, <Ref id="platform-gui" />.
+
+Diese Module reden untereinander über einen **lokalen Event-Bus**, nicht über das Netzwerk. Ein Block-Break löst ein Event aus, an dem Skills, Collections, Quests und Maschinen hängen — synchron, im selben Tick, ohne IO.
+
+<Note type="info" title="Warum nicht jede Domäne ein Service">
+  Die Variante „Skills als Service" klingt sauber, bedeutet aber, dass jeder abgebaute Block einen
+  Netzwerk-Call auslöst. Bei 300 Spielern sind das schnell fünfstellige Request-Zahlen pro Minute für
+  eine Zahl, die im RAM steht. Skills sind deshalb Modul plus Service: Das Modul rechnet, der Service
+  persistiert.
+</Note>
+
+## Der Datenfluss
+
+```
+ Join    ─→  Gameplay-Prozess lädt Snapshot (identity, progression, economy)
+             und hält ihn autoritativ im RAM
+ Spiel   ─→  Module mutieren den RAM-State, schreiben Deltas in eine Outbox
+ Flush   ─→  alle 15 s, bei Insel-Wechsel, bei Leave, bei Shutdown
+ Leave   ─→  finaler Flush, Lease auf dem Profil wird freigegeben
+```
+
+Zwei Eigenschaften, die daraus folgen:
+
+- **Ein Spieler ist zu jedem Zeitpunkt auf genau einem Gameplay-Prozess autoritativ.** Der `identity`-Service vergibt dafür ein Lease. Ohne Lease kein Schreiben. Das verhindert die klassische Item-Duplikation über Serverwechsel.
+- **Ein Absturz kostet höchstens ein Flush-Intervall.** Deshalb sind wertvolle Transaktionen (Bazaar-Kauf, Item-Handel) ausdrücklich *keine* Deltas, sondern synchrone Service-Calls mit Bestätigung — sie sind selten genug dafür.
+
+## Modul-Aufbau
+
+Jedes Feature ist ein eigenes Gradle-Modul mit dieser Struktur:
+
+```
+feature-rpg-skills/
+  api/       ← öffentliche Schnittstelle, was andere Module sehen dürfen
+  impl/      ← Implementierung, per ServiceLoader registriert
+  adapter-paper/     ← plattformspezifisch, nur falls nötig
+  adapter-minestom/
+```
+
+Nur `api` darf von anderen Modulen als Abhängigkeit eingebunden werden. `impl` kennt niemand. Damit ist ein Feature austauschbar und — wichtiger — **abschaltbar**: Fehlt die Implementierung, liefert die API einen No-Op, und der Rest des Modus läuft weiter. Details in <Ref id="platform-module-spi" />.
+
+## Was das für den Rollout bedeutet
+
+Weil Module über Events statt über direkte Aufrufe koppeln, kann jedes Feature einzeln deaktiviert ausgeliefert und per Flag scharf geschaltet werden — siehe <Ref id="platform-feature-flags" />. Das ist die technische Grundlage für „nach und nach rausbringen".
+
+## Offene Punkte
+
+<Open>Gehört `progression` wirklich in einen eigenen Service oder reicht eine Tabelle im `identity`-Service? Für getrennte Deploys spricht viel, gegen den Mehraufwand auch.</Open>
+
+<Open>Ist `content` ein Service oder ein signiertes Artefakt, das die Server beim Start ziehen? Siehe <Ref id="adr-005-content-source" />.</Open>

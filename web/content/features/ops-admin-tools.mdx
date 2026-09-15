@@ -1,0 +1,45 @@
+---
+id: ops-admin-tools
+title: Admin- & Supportwerkzeuge
+summary: Zustand ansehen, korrigieren und nachvollziehen — ohne Datenbankzugriff von Hand.
+status: draft
+pillar: ops
+release: v1
+order: 720
+updated: 2026-09-13
+depends_on: [platform-profile]
+tags: [betrieb, support]
+---
+
+## Warum von Anfang an
+
+Ohne Werkzeuge bedeutet jeder Supportfall: Entwickler, Datenbank, manuelles SQL. Das ist langsam, fehleranfällig und skaliert bei 30 Teammitgliedern überhaupt nicht. Die Werkzeuge sind kein Nachgedanke, sondern Teil der Definition von "fertig" (siehe <Ref id="release-strategy" />).
+
+## Ansehen
+
+- Spielerprofil vollständig: Skills, Stats mit Aufschlüsselung, Währung, Insel, Block, Quests.
+- Insel: Maschinen, Netze, Tick-Auslastung, Mitglieder, Rechte.
+- Item: Definition, Instanzdaten, Herkunft, Historie.
+
+## Korrigieren
+
+Währung anpassen, Item geben oder entfernen, Skill setzen, Block-Phase setzen, Insel-Snapshot zurückspielen, Lease brechen, Struktur neu prüfen.
+
+Jede dieser Aktionen wird protokolliert — mit Ausführendem, Zeitpunkt, Begründung und Vorher-Nachher-Wert. Ausnahmslos. Ein Adminwerkzeug ohne Protokoll ist selbst ein Sicherheitsproblem.
+
+## Nachvollziehen
+
+Die Historie ist im Support wichtiger als jede Korrekturmöglichkeit:
+
+- Transaktionen eines Spielers
+- Lagerbewegungen einer Clan-Insel
+- Rechteänderungen und Rauswürfe
+- Maschinen gebaut und abgebaut, mit Erbauer
+
+Damit lässt sich der häufigste Fall — "jemand hat mein Zeug genommen" — in Minuten klären statt im Wortgefecht.
+
+## Wo
+
+Im Web-Hub, mit Discord-Login und Rollen (wie im bestehenden Stack), plus ein paar In-Game-Befehle für den schnellen Blick. Rechte gestaffelt: ansehen für alle Supporter, korrigieren für Admins, Snapshot-Rückspielung für wenige.
+
+<Open>Sollen Spieler ihre eigene Transaktions- und Lagerhistorie einsehen können? Würde einen großen Teil der Tickets vorab erledigen.</Open>

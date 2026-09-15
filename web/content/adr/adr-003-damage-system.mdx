@@ -1,0 +1,36 @@
+---
+id: adr-003-damage-system
+title: ADR-003 — Eigenes Damage-System statt Vanilla
+summary: Vanilla-Schadensberechnung wird vollständig ersetzt. Entschieden.
+status: spec
+decision: Der Modus bringt eine eigene Schadensformel mit eigenen Stats mit; Vanilla-Damage wird abgeschaltet, nicht ergänzt.
+updated: 2026-09-13
+order: 3
+tags: [rpg, combat]
+---
+
+## Kontext
+
+Die RPG-Schiene orientiert sich an Hypixel Skyblock. Dort ist die eigene Schadensrechnung die Grundlage für Items, Mobs, Fähigkeiten und Progression. Die Alternative wäre gewesen, Vanilla-Schaden zu lassen und Stats als Attribut-Multiplikatoren obendrauf zu legen.
+
+## Entscheidung
+
+Vanilla-Schaden wird abgeschaltet. Alle Kampfergebnisse ergeben sich aus <Ref id="rpg-damage" /> auf Basis der Stats aus <Ref id="rpg-stats" />.
+
+## Begründung
+
+- **Vanilla-Health ist zu grobkörnig.** 20 HP lassen keine sinnvolle Progression über zwei Größenordnungen zu. Ein Mob mit 400.000 HP ist mit Vanilla-Mechanik nicht darstellbar, ohne dass Rüstung und Verzauberungen absurd werden.
+- **Vanilla-Rüstung und -Verzauberungen kollidieren** mit eigenen Stats. Man endet bei zwei Systemen, die sich gegenseitig multiplizieren und nicht mehr balancierbar sind.
+- **Halbe Lösungen kosten am Ende mehr.** Der Modifier-Ansatz wirkt billiger, bis der erste Boss gebaut wird; dann wird er doch ersetzt — nur mit einem Jahr Balancing-Altlast im Rücken.
+
+## Konsequenzen
+
+- Jedes Mob braucht eine eigene Definition; Vanilla-Mobs werden nicht mehr direkt verwendet, sondern über <Ref id="rpg-mobs" /> neu definiert.
+- Schadenszahlen müssen sichtbar sein (Damage-Indicators), sonst wirkt Kampf beliebig.
+- PvP wird dadurch komplexer, falls es je kommt — Stats müssten dort separat gedeckelt werden.
+- Vanilla-Tränke, Golden Apples und Absorption verlieren ihre Wirkung und brauchen eigene Entsprechungen.
+
+<Note type="warning" title="Reihenfolge">
+  Das System muss vor allem Kampf-Content stehen. Nachträglich einzuziehen bedeutet, jedes Item und
+  jedes Mob neu zu balancen — siehe <Ref id="release-strategy" />.
+</Note>

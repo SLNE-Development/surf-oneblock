@@ -1,0 +1,37 @@
+---
+id: adr-004-logistics
+title: ADR-004 — Volle Logistik statt abstrakter Produktionsgebäude
+summary: Maschinen werden über Röhren und ein Energienetz verbunden, nicht nur per Inventar bedient. Entschieden, mit Auflagen.
+status: spec
+decision: Multiblocks bekommen echten Item-Transport und ein Energienetz; dafür gilt ein hartes Tick-Budget und ein Limit pro Insel.
+updated: 2026-09-13
+order: 4
+tags: [multiblock, performance]
+---
+
+## Kontext
+
+Die Vorlage — Kaktus Tycoon — arbeitet mit Gebäuden, die man per GUI befüllt und leert. Die Alternative ist ein echtes Logistiksystem: Röhren, Energie, Netzwerke, wie man es aus Technik-Modpacks kennt.
+
+## Entscheidung
+
+Volle Logistik: <Ref id="multiblock-logistics" /> und <Ref id="multiblock-energy" /> sind Teil von V1.
+
+## Begründung
+
+Das Bauen der Kette *ist* der Spielspaß für die Zielgruppe "Optimierer" (siehe <Ref id="vision" />). Ein GUI-basiertes Gebäudesystem ist schneller gebaut, erzeugt aber kein Optimierungsproblem — und damit keinen Grund, die Insel immer wieder umzubauen. Genau dieses Umbauen ist die Langzeitmotivation, die dem Modus sonst fehlt.
+
+## Auflagen
+
+Diese Entscheidung ist die mit dem größten Performance-Risiko im Projekt. Sie gilt nur zusammen mit:
+
+1. **Kein Tick pro Röhre.** Transport wird als Netzwerk-Transfer gerechnet, nicht als wandernde Entities. Details in <Ref id="multiblock-logistics" />.
+2. **Hartes Tick-Budget pro Insel.** Wird es überschritten, drosselt das System sichtbar, statt den Server zu verlangsamen — <Ref id="multiblock-tick-budget" />.
+3. **Limit pro Insel**, gekoppelt an Insel-Ausbaustufe. Kein unbegrenztes Wachstum.
+4. **Lasttest vor Feature-Freigabe**: 50 Inseln × 100 Maschinen müssen im Budget bleiben.
+
+## Was in V1 noch nicht kommt
+
+Filter, Sortiernetzwerke und Logistik zweiter Ordnung (Maschinen, die Maschinen steuern) sind ausdrücklich V1.x und V2. V1 liefert Röhren, Energie und Maschinen — genug für eine Kette, zu wenig für eine Fabrik.
+
+<Open>Röhren als Blöcke oder als unsichtbare Verbindungen zwischen benachbarten Maschinen? Letzteres ist billiger, nimmt aber genau das Bauerlebnis weg, für das die Entscheidung getroffen wurde.</Open>

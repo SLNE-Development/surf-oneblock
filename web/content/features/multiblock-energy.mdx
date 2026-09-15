@@ -1,0 +1,43 @@
+---
+id: multiblock-energy
+title: Energienetz
+summary: Erzeugung, Speicherung und Verteilung — die Ressource, die Produktion begrenzt und Kooperation belohnt.
+status: spec
+pillar: multiblock
+release: v1
+order: 420
+updated: 2026-09-13
+depends_on: [multiblock-engine]
+tags: [multiblock, energie]
+---
+
+## Warum Energie
+
+Ohne eine begrenzende Ressource baut der Spieler einfach mehr Maschinen, bis der Server ächzt. Energie macht das Limit zu einem **Spielthema** statt zu einer technischen Grenze: Wer mehr produzieren will, muss erst mehr erzeugen, und das ist eine interessante Entscheidung.
+
+Auf einer Clan-Insel ist das geteilte Netz zugleich der stärkste Kooperationsanreiz im Modus.
+
+## Modell
+
+| Element | Rolle |
+| --- | --- |
+| Erzeuger | wandelt Brennstoff oder Umgebung in Energie |
+| Speicher | puffert, gleicht Spitzen aus |
+| Verbraucher | Maschinen |
+| Netz | die Menge aller verbundenen Elemente |
+
+Ein Netz wird als Ganzes gerechnet, nicht Verbindung für Verbindung: Erzeugung und Bedarf werden pro Tick summiert; reicht es nicht, bedienen sich Verbraucher nach Priorität, die der Spieler festlegen kann. Kein Routing entlang einzelner Kabel, kein Pfadsuchen.
+
+## Netzbildung
+
+Netze entstehen durch Berührung — benachbarte Elemente und Kabel gehören zum selben Netz. Die Zugehörigkeit wird beim Bauen und Abbauen inkrementell aktualisiert (Union-Find), nicht bei jedem Tick neu berechnet.
+
+## Erzeugungsarten
+
+Ofen (Brennstoff), Solar (nur tagsüber, wetterabhängig), Lava (Verbrauch), später Fortgeschrittenes. Unterschiedliche Profile — konstant, schwankend, teuer aber stark — machen die Wahl interessant. Drei Erzeuger mit identischer Kurve wären drei Skins.
+
+## Anzeige
+
+Erzeugung, Verbrauch, Füllstand des Speichers und der größte Verbraucher gehören in eine Übersicht. Auf einer Clan-Insel zusätzlich der Verbrauch pro Mitglied — das beugt dem Konflikt vor, bevor er entsteht.
+
+<Open>Soll Energie zwischen Inseln übertragbar sein? Das öffnet Energie als Handelsware und damit einen ganzen Markt — und ist zugleich eine große Balancing-Baustelle.</Open>

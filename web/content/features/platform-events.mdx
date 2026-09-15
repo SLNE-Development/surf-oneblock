@@ -1,0 +1,58 @@
+---
+id: platform-events
+title: Event-Bus
+summary: Wie Module miteinander reden, ohne sich zu kennen — synchron im Tick, ohne IO.
+status: spec
+pillar: platform
+release: v1
+order: 105
+updated: 2026-09-14
+depends_on: [platform-module-spi]
+uses: [surf-redis, surf-rabbitmq, surf-api]
+tags: [events, fundament]
+---
+
+## Ziel
+
+Ein Block-Break soll Skill-XP, Collection-Fortschritt, Quest-Prüfung, Maschinen-Input und Statistik auslösen — ohne dass <Ref id="oneblock-core" /> auch nur eines dieser Module kennt.
+
+## Modell
+
+Zwei getrennte Bussysteme, weil sie unterschiedliche Garantien brauchen:
+
+| Bus | Zustellung | Umsetzung | Für |
+| --- | --- | --- | --- |
+| **Lokal** | synchron, im selben Tick, im selben Prozess | surf-api | Gameplay-Reaktionen |
+| **Verteilt** | asynchron, mindestens einmal | [surf-redis](https://github.com/SLNE-Development/surf-redis) | Cross-Server-Ereignisse |
+| **Arbeit** | Warteschlange, wiederholbar | [surf-rabbitmq](https://github.com/SLNE-Development/surf-rabbitmq) | Marktabgleich, Telemetrie, Snapshots |
+
+surf-redis bringt den verteilten Bus samt Request-Response und synchronisierten Collections schon mit — das deckt Cross-Server-Ereignisse und die Verteilung von Flags und Rechten ab. surf-rabbitmq ist der Weg für alles, was nicht sofort passieren muss und einen erneuten Versuch verträgt; die Trennlinie ist **Benachrichtigung gegen Arbeitsauftrag**, nicht die Technik.
+
+Der lokale Bus ist der Normalfall. Der verteilte kommt nur zum Einsatz, wenn ein anderer Server es wissen muss — Clan-Level gestiegen, Bazaar-Order erfüllt, Spieler online.
+
+## Regeln für Handler
+
+- **Kein IO.** Kein Datenbankzugriff, kein HTTP, keine Datei. Ein Handler, der blockiert, blockiert den Tick.
+- **Prioritäten statt Reihenfolge-Annahmen.** Wer nach jemandem laufen muss, sagt das über eine Priorität, nicht über Ladereihenfolge.
+- **Abbrechbar nur, wo es Sinn ergibt.** `BlockMineAttemptEvent` ist abbrechbar (Rechte, Cooldown), `BlockMinedEvent` nicht — das ist eine Tatsache, keine Anfrage.
+- **Ein Handler-Fehler kippt nicht das Event.** Er wird geloggt, gezählt und das Event läuft weiter. Sonst reißt ein fehlerhaftes Randfeature den Kern mit.
+
+## Typische Events
+
+```kotlin
+BlockMineAttemptEvent(player, block, cancellable = true)
+BlockMinedEvent(player, block, drops)
+PhaseAdvancedEvent(block, from, to)
+MachineFinishedEvent(machine, output)
+StatRecalculatedEvent(player, changed)
+IslandEnteredEvent(player, island)
+```
+
+## Performance
+
+Handler werden beim `link` einmal aufgelöst und in ein Array pro Eventtyp gelegt — kein Reflection-Lookup zur Laufzeit. Bei mehreren tausend Block-Breaks pro Sekunde ist das der Unterschied zwischen unauffällig und messbar.
+
+<Note type="info" title="Messbar halten">
+  Jeder Handler wird mit seiner Ausführungszeit erfasst, damit man in <Ref id="ops-telemetry" /> sieht,
+  welches Modul den Tick kostet. Ohne diese Zahl sucht man später blind.
+</Note>

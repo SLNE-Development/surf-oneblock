@@ -1,0 +1,61 @@
+---
+id: rpg-stats
+title: Stat-System
+summary: Die Zahlen, auf denen Kampf, Items und Skills stehen — und wie sie berechnet werden.
+status: spec
+pillar: rpg
+release: v1
+order: 500
+updated: 2026-09-13
+depends_on: [platform-module-spi, platform-events]
+tags: [rpg, fundament]
+---
+
+## Stats in V1
+
+| Stat | Wirkung |
+| --- | --- |
+| `HEALTH` | maximale Lebenspunkte |
+| `DEFENSE` | reduziert eingehenden Schaden |
+| `STRENGTH` | erhöht ausgehenden Schaden |
+| `CRIT_CHANCE` | Wahrscheinlichkeit eines kritischen Treffers |
+| `CRIT_DAMAGE` | Multiplikator bei kritischem Treffer |
+| `SPEED` | Bewegungsgeschwindigkeit |
+| `MINING_SPEED` | Abbaugeschwindigkeit |
+| `MINING_FORTUNE` | zusätzliche Drops |
+
+Die letzten beiden verbinden das RPG mit dem Wirtschaftsstrang — ohne sie wären es zwei getrennte Spiele, siehe <Ref id="vision" />.
+
+## Berechnung
+
+Stats werden aus **Beiträgen** summiert. Ein Beitrag hat eine Quelle, einen Typ und einen Wert.
+
+```
+final = (basis + Σ additiv) × Π multiplikativ
+```
+
+Additiv zuerst, multiplikativ danach. Diese Reihenfolge festzulegen ist wichtiger, als welche man wählt — sie muss überall gleich sein, sonst ergeben zwei Items zusammen je nach Reihenfolge unterschiedliche Werte.
+
+## Beiträge anmelden
+
+Andere Module tragen ein, ohne dass `rpg-stats` sie kennt — über einen Contribution-Point aus <Ref id="module-contract" />:
+
+```kotlin
+ctx.stats.contribute { player, out ->
+    out.add(Stat.MINING_FORTUNE, skills.level(player, MINING) * 2.0)
+}
+```
+
+So kommen Skill-Boni, Item-Stats, Clan-Perks und temporäre Effekte in dieselbe Rechnung, ohne dass die Module voneinander wissen.
+
+## Neuberechnung
+
+Nicht pro Tick, sondern bei Auslösern: Ausrüstung gewechselt, Skill gestiegen, Effekt abgelaufen, Insel gewechselt. Das Ergebnis wird gecacht; `StatRecalculatedEvent` meldet, was sich geändert hat.
+
+Bei einem Treffer wird der gecachte Wert gelesen — ein Feldzugriff, keine Rechnung.
+
+## Anzeige
+
+Ein Menü, das jeden Stat mit seinen Quellen aufschlüsselt: "Strength 142 = 0 Basis + 80 Schwert + 42 Skills + 20 Talisman". Ohne diese Aufschlüsselung kann niemand seine Ausrüstung optimieren — und Optimieren ist der halbe Reiz.
+
+<Open>Sollen Stats eine Obergrenze haben? Ungedeckelt wird der Abstand zwischen altem und neuem Spieler irgendwann absurd.</Open>

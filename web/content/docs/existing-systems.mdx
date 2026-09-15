@@ -1,0 +1,64 @@
+---
+id: existing-systems
+title: Bestehende Systeme
+summary: Was aus der SLNE-Org wiederverwendet wird, was bewusst neu gebaut wird und warum — die Bestandsaufnahme hinter der Aufwandsschätzung.
+status: draft
+updated: 2026-09-14
+order: 25
+tags: [bestand, wiederverwendung]
+---
+
+## Warum diese Seite zuerst
+
+Der Aufwand für diesen Modus hängt weniger daran, was gebaut werden muss, als daran, was schon da ist. Die Org bringt einen großen Teil des Fundaments mit — Modulsystem, Messaging, Datenbank, Clans, Skills, Transaktionen. Das verschiebt den Schwerpunkt der Arbeit deutlich nach oben, in die modusspezifischen Systeme.
+
+Jedes Feature in dieser Doku trägt im Kopf ein Feld **Nutzt**, das auf die verwendeten Repos verlinkt. Diese Seite ist die Gesamtsicht dazu.
+
+## Wird wiederverwendet
+
+| System | Deckt ab | Betrifft |
+| --- | --- | --- |
+| [surf-api](https://github.com/SLNE-Development/surf-api) | Modulsystem, Service Discovery, Lifecycle, NMS-Bridge, GUI-System mit eigenen Texturen, Config | <Ref id="platform-module-spi" />, <Ref id="platform-gui" />, <Ref id="platform-i18n" /> |
+| [mistra](https://github.com/SLNE-Development/mistra) | Plugin-Loader für Minestom mit isolierten Classloadern | <Ref id="platform-module-spi" /> — die Hub-Seite |
+| [surf-redis](https://github.com/SLNE-Development/surf-redis) | Verteilter Event-Bus, Request-Response, synced collections, Cache | <Ref id="platform-events" />, <Ref id="platform-feature-flags" /> |
+| [surf-rabbitmq](https://github.com/SLNE-Development/surf-rabbitmq) | Typsicheres Publish/Consume für Hintergrundarbeit | <Ref id="platform-events" />, <Ref id="ops-telemetry" /> |
+| [surf-database-r2dbc](https://github.com/SLNE-Development/surf-database-r2dbc) | Non-blocking Postgres über Exposed und R2DBC | <Ref id="adr-007-persistence" />, <Ref id="platform-profile" /> |
+| [surf-microservice](https://github.com/SLNE-Development/surf-microservice) | Rahmen für die Services | <Ref id="adr-002-service-cut" /> |
+| [surf-clan](https://github.com/SLNE-Development/surf-clan) | Clans, Mitgliedschaft, Rollen | <Ref id="clan-bridge" /> |
+| [surf-skills](https://github.com/SLNE-Development/surf-skills) | Skills mit XP | <Ref id="rpg-skills" /> |
+| [surf-enchantment](https://github.com/SLNE-Development/surf-enchantment) | Custom-Item-Effekte, Event-Handling, Tasks | <Ref id="rpg-items" /> |
+| [surf-transaction](https://github.com/SLNE-Development/surf-transaction) | Währungen und Buchungen | <Ref id="economy-core" /> |
+| [surf-stats](https://github.com/SLNE-Development/surf-stats) | Kennzahlen und Dashboard | <Ref id="ops-telemetry" /> |
+| [surf-queue](https://github.com/SLNE-Development/surf-queue) | Warteschlangen vor vollen Servern | <Ref id="island-allocator" /> |
+
+## Wird neu gebaut
+
+| Was | Warum nicht wiederverwenden |
+| --- | --- |
+| <Ref id="island-permissions" /> | Insel-Rechte hängen an Slots, Clan-Rollen und Maschinen-Eigentum. Ein generischer Schutz-Layer bildet diese Verzahnung nicht ab, und ihn dahin zu biegen ist teurer als der Eigenbau. |
+| <Ref id="island-storage" /> | Es gibt keine Welt-Persistenz für ein Modell mit tausenden kleinen, wandernden Welten. |
+| <Ref id="rpg-damage" /> | Das eigene Schadenssystem aus <Ref id="adr-003-damage-system" /> ersetzt Vanilla vollständig — dafür gibt es nichts Passendes. |
+| <Ref id="platform-profile" /> | Kein bestehendes Profilsystem im Einsatz. Wird auf surf-database-r2dbc neu gebaut, inklusive Lease. |
+| <Ref id="platform-registry" /> | Definitionen liegen laut <Ref id="adr-005-content-source" /> im Code; die Registry ist dünn und modusspezifisch. |
+| <Ref id="multiblock-engine" /> und alles darunter | Gibt es in dieser Form nicht. Der größte Einzelposten des Projekts. |
+| <Ref id="economy-server-market" /> | Der dynamische Server-Markt ist neu; surf-transaction liefert nur die Buchung darunter. |
+
+## Was sich daraus für den Plan ergibt
+
+Das Fundament ist zum großen Teil vorhanden. Der Aufwand konzentriert sich auf vier Blöcke, und die sind alle modusspezifisch:
+
+1. **Multiblocks** — Engine, Maschinen, Energie, Logistik. Mit Abstand der größte.
+2. **Welt-Persistenz** — Inselspeicherung, Allocator, Leases.
+3. **Kampf** — Schadenssystem, Stats, Mobs.
+4. **Server-Markt** — die dynamische Preisbildung.
+
+<Note type="warning" title="Der Haken an der Wiederverwendung">
+  Jedes übernommene System bringt seine eigenen Annahmen mit — etwa, dass ein Spieler auf genau einem
+  Server ist, oder dass Welten statisch sind. Bevor ein Repo als „deckt ab" verbucht wird, gehört
+  geprüft, ob es mit parallel tickenden Welten (<Ref id="adr-001-world-hosting" />) und mit
+  wandernden Inseln zurechtkommt. Das ist Prüfarbeit vor der ersten Zeile Code, keine Formalie.
+</Note>
+
+<Open>Prüfen, ob surf-api und die darauf aufbauenden Module threadsicher sind. Sobald Universe mehrere Welten parallel tickt, laufen Modul-Handler gleichzeitig — Annahmen aus der Einzelthread-Welt fallen dann auf.</Open>
+
+<Open>surf-skills und surf-enchantment auf Passung prüfen: Lassen sie Beiträge auf fremde Stat-Systeme zu (<Ref id="rpg-stats" />), oder rechnen sie selbst?</Open>

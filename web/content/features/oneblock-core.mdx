@@ -1,0 +1,56 @@
+---
+id: oneblock-core
+title: OneBlock-Kern
+summary: Der Block selbst — Besitz, Abbau, Nachwachsen, Ertrag und wem er gehört.
+status: spec
+pillar: core
+release: v1
+order: 200
+updated: 2026-09-13
+depends_on: [platform-module-spi, platform-registry, island-core]
+tags: [core]
+---
+
+## Was der Block ist
+
+Ein eigenständiges Objekt mit eigener Identität, das **einem Spieler** gehört und auf einem Slot einer Insel steht — siehe <Ref id="adr-006-ownership" />. Er trägt:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `ownerId` | Der Besitzer. Ändert sich nie. |
+| `phaseId` | Aktuelle Phase, siehe <Ref id="oneblock-phases" /> |
+| `phaseProgress` | Abgebaute Blöcke innerhalb der Phase |
+| `totalMined` | Gesamtzähler über alle Phasen |
+| `slotRef` | Wo er gerade steht (Insel + Slot) |
+| `placedAt` | Für die Abklingzeit beim Umsetzen |
+
+## Abbauschleife
+
+```
+Abbau-Versuch → Rechte? Abklingzeit? Flag?      (abbrechbar)
+              → Loot aus der Phasen-Tabelle ziehen
+              → Ertrag zuweisen (siehe unten)
+              → phaseProgress erhöhen
+              → nächsten Block setzen
+              → BlockMinedEvent
+```
+
+Der nächste Block wird **sofort** gesetzt, nicht im nächsten Tick. Jede Verzögerung ist bei einer Aktion, die ein Spieler tausendfach am Tag ausführt, sofort spürbar und wirkt wie Lag.
+
+## Wem der Ertrag gehört
+
+Dem Block-Besitzer — immer, auch auf einer fremden Clan-Insel. Der Insel-Besitzer kann eine **Abgabe** in Prozent festlegen, die bei der Zuweisung abgezweigt wird und ins Clan-Lager fließt (siehe <Ref id="clan-island" />). Die Abgabe ist vor dem Platzieren sichtbar; nachträgliche Erhöhungen greifen erst nach einer Ankündigungsfrist. Sonst wird aus dem Feature eine Falle.
+
+## Umsetzen
+
+Ein Spieler kann seinen Block auf einen anderen Slot bewegen. Der Fortschritt bleibt vollständig erhalten. Es gilt eine Abklingzeit (Vorschlag: 24 Stunden), damit nicht ständig zum jeweils besten Clan-Bonus gewandert wird.
+
+## Ertragsquellen jenseits von Items
+
+Jeder Abbau erzeugt außerdem Skill-XP (<Ref id="rpg-skills" />), Collection-Fortschritt und ggf. Quest-Fortschritt. Der Kern weiß davon nichts — das hängt alles am `BlockMinedEvent`, siehe <Ref id="platform-events" />.
+
+## Leistungsgrenzen
+
+Ein Spieler mit gutem Werkzeug bricht mehrere Blöcke pro Sekunde. Bei 300 gleichzeitigen Spielern sind das gut tausend Ereignisse pro Sekunde, jedes mit Loot-Ziehung und mehreren Handlern. Deshalb: keine Allokation im Hot Path, Loot-Tabellen vorberechnet, und Ertrag wird gebündelt statt einzeln zugewiesen.
+
+<Open>Was passiert, wenn ein Spieler den Block eines anderen abbaut — erlaubt mit Ertrag für den Besitzer, oder gar nicht erlaubt? Ersteres macht Clan-Inseln kooperativer, öffnet aber Missbrauch.</Open>

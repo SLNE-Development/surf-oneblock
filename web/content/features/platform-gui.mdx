@@ -1,0 +1,49 @@
+---
+id: platform-gui
+title: GUI-Framework
+summary: Menüs deklarativ bauen, mit Live-Aktualisierung, Paginierung und ohne Klick-Duplikationsfehler.
+status: draft
+pillar: platform
+release: v1
+order: 125
+updated: 2026-09-14
+depends_on: [platform-module-spi, platform-i18n]
+uses: [surf-api]
+tags: [ui]
+---
+
+## Ziel
+
+Der Modus besteht zu einem großen Teil aus Menüs: Maschinen, Bazaar, Skills, Collections, Quests, Insel-Verwaltung, Clan. Jedes Modul baut sonst seine eigenen, und sie sehen alle leicht anders aus und haben alle dieselben Fehler.
+
+## Was schon da ist
+
+[surf-api](https://github.com/SLNE-Development/surf-api) bringt ein GUI-System mit, das auch vollständig eigene Oberflächen mit eigenen Texturen bauen kann. Das ist deutlich mehr als ein Inventar-Wrapper und für einen Modus mit Maschinenmenüs, Marktcharts und Skill-Übersichten der Unterschied zwischen „Kisten mit Symbolen" und einer Oberfläche, die nach eigenem Spiel aussieht.
+
+Zu klären ist nur, ob die Punkte unter *Was das Framework lösen muss* dort schon abgedeckt sind — besonders der Klick-Schutz und die Teil-Aktualisierung. Beides sind Dinge, die ein GUI-System nicht zwingend mitbringt und die in einem Modus mit handelbaren Items unverzichtbar sind.
+
+## Modell
+
+Menüs werden deklarativ beschrieben und bei Zustandsänderung neu gerendert — nicht durch manuelles Setzen einzelner Slots.
+
+```kotlin
+menu(rows = 6, title = "machine.crusher.title") {
+    slot(13) { item(machine.input) onClick { takeInput(it) } }
+    progress(slots = 21..23, value = machine.progress)
+    paginated(slots = 27..44, items = machine.outputs)
+    refreshEvery(ticks = 10)
+}
+```
+
+## Was das Framework lösen muss
+
+- **Doppelklicks und Race Conditions.** Jede Aktion läuft gegen einen Zustandsstempel; passt er nicht mehr, wird der Klick verworfen und neu gerendert. Das ist die häufigste Duplikationsquelle in Minecraft-Plugins.
+- **Aktualisierung ohne Flackern.** Nur geänderte Slots werden gesendet, nicht das ganze Inventar.
+- **Menüs schließen sich, wenn ihre Grundlage verschwindet.** Maschine abgebaut, Insel verlassen, Trade abgebrochen — das Menü geht zu, statt auf totem Zustand zu arbeiten.
+- **Übersetzung am Rand.** Titel und Texte sind Schlüssel; gerendert wird in der Sprache des Betrachters, siehe <Ref id="platform-i18n" />.
+
+## Bausteine
+
+Fortschrittsbalken, Paginierung, Bestätigungsdialog, Suchfeld über Anvil-Eingabe, Sortier- und Filterleiste, Rückwärts-Navigation mit Verlauf. Diese sechs decken erfahrungsgemäß fast alles ab; alles darüber ist Sonderfall.
+
+<Open>Trägt das GUI-System aus surf-api beide Plattformen? Hub-Menüs laufen unter Minestom, Maschinenmenüs unter der Paper-Linie — beide sollten dieselbe Beschreibung verwenden können.</Open>

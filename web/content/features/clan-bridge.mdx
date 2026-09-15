@@ -1,0 +1,45 @@
+---
+id: clan-bridge
+title: Anbindung des bestehenden Clansystems
+summary: Der Modus bringt kein eigenes Clansystem mit, sondern spricht über einen schmalen Adapter mit eurem.
+status: spec
+pillar: clans
+release: v1
+order: 300
+updated: 2026-09-14
+depends_on: [platform-module-spi]
+uses: [surf-clan]
+tags: [clans, integration]
+---
+
+## Grundsatz
+
+Clans existieren bereits — [surf-clan](https://github.com/SLNE-Development/surf-clan) bleibt die Quelle. Der Modus definiert sie nicht neu, sondern konsumiert sie. Alles, was der Modus über Clans wissen muss, läuft über ein Interface mit wenigen Methoden — der Rest des Codes kennt das bestehende System nicht.
+
+```kotlin
+interface ClanBridge {
+    fun clanOf(player: PlayerRef): ClanRef?
+    fun membersOf(clan: ClanRef): List<PlayerRef>
+    fun roleOf(player: PlayerRef, clan: ClanRef): ClanRole
+    fun displayOf(clan: ClanRef): ClanDisplay      // Name, Tag, Farbe
+}
+```
+
+Ereignisse aus dem Clansystem (Beitritt, Austritt, Rollenwechsel, Auflösung) kommen über den verteilten Bus und werden auf modus-eigene Events abgebildet.
+
+## Was der Modus zusätzlich speichert
+
+Modus-spezifische Daten hängen **nicht** im Clansystem, sondern in einer eigenen Tabelle mit der Clan-ID als Schlüssel: Clan-Insel, Clan-Level, Modus-Fortschritt, Lager. So bleibt das Clansystem frei von OneBlock-Wissen und kann weiter für andere Modi genutzt werden.
+
+## Der kritische Fall: Clan-Auflösung
+
+Wird ein Clan aufgelöst oder ein Mitglied entfernt, stehen möglicherweise fremde Blöcke auf der Clan-Insel. Der Ablauf:
+
+1. Betroffene Spieler werden benachrichtigt, mit Frist.
+2. Blöcke gehen in den heimatlos-Zustand, siehe <Ref id="island-placement" />.
+3. Maschinen und deren Inhalt bleiben dem Erbauer zugeordnet und werden ihm zugestellt.
+4. Das Clan-Lager wird nach der Regel verteilt, die der Clan-Besitzer vorher festgelegt hat.
+
+Punkt 4 muss **vorher** feststehen, nicht im Streitfall entschieden werden.
+
+<Open>Was passiert mit dem Clan-Level, wenn ein Clan sich neu gründet? Übertragbar wäre bequem und lädt zum Missbrauch ein.</Open>

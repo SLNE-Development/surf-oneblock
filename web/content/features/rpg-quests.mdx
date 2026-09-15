@@ -1,0 +1,48 @@
+---
+id: rpg-quests
+title: Quests & Ziele
+summary: Geführte Aufgaben, die neuen Spielern den Einstieg zeigen und erfahrenen einen Tagesrhythmus geben.
+status: draft
+pillar: rpg
+release: v1
+order: 550
+updated: 2026-09-13
+depends_on: [platform-events, rpg-skills]
+tags: [rpg, onboarding]
+---
+
+## Drei Arten
+
+| Art | Zweck | Beispiel |
+| --- | --- | --- |
+| Einstieg | zeigt die Mechaniken | "Baue deine erste Maschine" |
+| Täglich/Wöchentlich | gibt Rhythmus | "Produziere 5.000 Einheiten" |
+| Kette | führt durch Content | Phasen-Storyline, Boss-Vorbereitung |
+
+Die Einstiegskette ist die wichtigste und wird am häufigsten unterschätzt. Ein Spieler, der nach zehn Minuten nicht weiß, was er tun soll, kommt nicht wieder — und bei einem Modus mit vier verzahnten Systemen ist das die Standardsituation ohne Führung.
+
+## Definition
+
+```yaml
+id: first_machine
+name: "Erste Schritte: Zerkleinerer"
+requires: [tutorial_mine_100]
+objectives:
+  - { type: place_structure, structure: basic_crusher }
+  - { type: machine_output, machine: basic_crusher, amount: 64 }
+rewards:
+  - { coins: 500 }
+  - { item: "oneblock:multiblock/pipe x16" }
+```
+
+Ziele werden über Events aus <Ref id="platform-events" /> ausgewertet — das Quest-Modul kennt weder Maschinen noch Blöcke, es hört nur zu.
+
+## Führung
+
+Ein Quest muss sagen, **wo** und **wie**, nicht nur **was**. Wegpunkt, Hinweis auf das Rezept, Verlinkung ins richtige Menü. "Baue einen Zerkleinerer" ohne Hinweis, woher der Kern kommt, ist kein Quest, sondern ein Rätsel.
+
+## Belohnungen
+
+Einstieg belohnt mit Werkzeug und Material, das den nächsten Schritt ermöglicht. Täglich belohnt mit Währung und Verbrauchsgütern — nie mit handelbaren Items in Mengen, die den Markt bewegen (siehe <Ref id="balancing" />).
+
+<Open>Wie viele Einstiegsquests? Zu wenige lassen Spieler allein, zu viele fühlen sich nach Arbeitsliste an. Zwölf bis fünfzehn bis zum ersten eigenen Kreislauf wären ein Ansatz.</Open>

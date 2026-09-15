@@ -1,0 +1,51 @@
+---
+id: platform-registry
+title: Registry für Definitionen
+summary: Eine Stelle, an der Items, Rezepte, Phasen, Mobs und Struktur-Patterns definiert sind — mit stabilen Schlüsseln.
+status: spec
+pillar: platform
+release: v1
+order: 110
+updated: 2026-09-13
+depends_on: [platform-module-spi]
+tags: [items, content, fundament]
+---
+
+## Ziel
+
+Ein Item ist an vielen Stellen relevant: als Maschinen-Output, als Quest-Ziel, als Handelsware, als Ausrüstung mit Stats, als Collection-Eintrag. Wenn jedes Modul sein eigenes Verständnis davon hat, driften die Definitionen auseinander, und der Fehler fällt erst im Livebetrieb auf.
+
+Die Registry ist die eine Wahrheit. Alles andere referenziert per Schlüssel.
+
+## Schlüssel
+
+```
+oneblock:<modul>/<name>
+```
+
+Beispiele: `oneblock:rpg/aspect_of_the_end`, `oneblock:multiblock/basic_crusher`, `oneblock:core/phase_3`.
+
+Schlüssel sind **unveränderlich**. Sie stehen in Spielerinventaren, in Datenbanken und in Bazaar-Orders. Ein umbenannter Schlüssel ist ein Datenverlust. Umbenennungen laufen deshalb nur über einen expliziten Alias-Eintrag, der für immer bestehen bleibt.
+
+## Was registriert wird
+
+| Registry | Inhalt |
+| --- | --- |
+| `ItemRegistry` | Custom Items mit Stats, Seltenheit, Verhalten |
+| `RecipeRegistry` | Rezepte für Maschinen und Werkbank |
+| `PhaseRegistry` | Block-Phasen mit Loot-Tabellen |
+| `StructureRegistry` | Multiblock-Patterns |
+| `MobRegistry` | Custom Mobs |
+| `SkillRegistry` | Skills mit XP-Kurven |
+
+Alle nach der gleichen Mechanik: In `register` beschreibbar, danach eingefroren und nur noch lesbar. Ein Schreibversuch nach dem Einfrieren ist ein Fehler, keine Warnung — sonst entstehen Zustände, die nur auf einem von acht Servern existieren.
+
+## Herkunft der Daten
+
+Die Registry ist der Speicher, nicht die Quelle. Woher die Definitionen kommen — Code, Service oder versioniertes Bundle — entscheidet <Ref id="adr-005-content-source" />. Die Registry-API ist bewusst so geschnitten, dass diese Entscheidung nichts an den nutzenden Modulen ändert.
+
+## Validierung
+
+Beim Einfrieren läuft eine Prüfung über alle Registries: Verweist ein Rezept auf ein unbekanntes Item? Hat eine Phase eine leere Loot-Tabelle? Referenziert ein Mob ein Item, das es nicht gibt? Fehler hier verhindern den Start. Das ist der günstigste Moment, sie zu finden.
+
+<Open>Brauchen Items eine Datenversion, damit alte Exemplare in Inventaren beim Laden migriert werden können? Vermutlich ja — siehe <Ref id="ops-migrations" />.</Open>

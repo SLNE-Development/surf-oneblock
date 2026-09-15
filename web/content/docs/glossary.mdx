@@ -1,0 +1,43 @@
+---
+id: glossary
+title: Glossar
+summary: Begriffe, die im Team unterschiedlich verwendet werden — hier einmal festgelegt.
+status: draft
+updated: 2026-09-13
+order: 90
+tags: [konventionen]
+---
+
+## Spielbegriffe
+
+| Begriff | Bedeutung |
+| --- | --- |
+| **Block** | Der persönliche OneBlock eines Spielers. Gehört immer genau einem Spieler, nie einem Clan. |
+| **Phase** | Ein Abschnitt der Block-Progression mit eigener Loot-Tabelle und eigenem Aussehen. |
+| **Insel** | Das Grundstück, auf dem ein Block steht. Gehört einem Spieler oder einem Clan. |
+| **Slot** | Ein Platz auf einer Insel, auf dem ein Block stehen kann. Eine Clan-Insel hat mehrere. |
+| **Struktur** | Eine erkannte Multiblock-Anordnung, die noch keine Funktion hat. |
+| **Maschine** | Eine Struktur mit Rezept, Zustand und Inventar. Jede Maschine ist eine Struktur, nicht umgekehrt. |
+| **Netz** | Eine Menge verbundener Maschinen und Röhren, die gemeinsam getickt wird. |
+| **Stat** | Ein numerischer Spielerwert (Health, Strength, …), berechnet aus Basis + Beiträgen. |
+| **Beitrag** | Ein einzelner Summand einer Stat-Berechnung, z. B. aus Item, Skill oder Clan-Perk. |
+| **Collection** | Zähler, wie viel ein Spieler von einem Material je gesammelt hat. Schaltet Rezepte frei. |
+
+## Technische Begriffe
+
+| Begriff | Bedeutung |
+| --- | --- |
+| **Modul** | Ein Feature als eigenständige Codeeinheit mit `api` und `impl`. Siehe <Ref id="module-contract" />. |
+| **Service** | Ein eigener Prozess mit eigener Datenhoheit. Siehe <Ref id="architecture" />. |
+| **Gameplay-Prozess** | Der Server, auf dem Spieler tatsächlich spielen — Paper, Folia oder Minestom. |
+| **Lease** | Das exklusive Schreibrecht eines Prozesses auf ein Spielerprofil. |
+| **Outbox** | Der Puffer, in dem Zustandsänderungen bis zum nächsten Flush liegen. |
+| **Flag** | Ein zur Laufzeit schaltbarer Schalter für ein Feature. Siehe <Ref id="platform-feature-flags" />. |
+| **Definition** | Ein Datensatz aus dem `content`-Service: Item, Rezept, Phase, Struktur-Pattern. |
+| **Instanz** | Eine geladene Welt bzw. Region, in der eine oder mehrere Inseln liegen. |
+
+<Note type="neutral" title="Zwei Wörter, die wir nicht benutzen">
+  „Skyblock" — der Modus ist keines, und der Vergleich weckt falsche Erwartungen. Und „Insel-Level" —
+  gemeint ist fast immer entweder die Block-Phase oder das Clan-Level; wer „Insel-Level" sagt, meint
+  meist etwas anderes als sein Gegenüber.
+</Note>

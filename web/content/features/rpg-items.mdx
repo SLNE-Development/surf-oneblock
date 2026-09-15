@@ -1,0 +1,58 @@
+---
+id: rpg-items
+title: Custom Items
+summary: Ausrüstung mit Stats, Seltenheiten, Aufwertung und Fähigkeiten — und wie sie im Inventar überlebt.
+status: spec
+pillar: rpg
+release: v1
+order: 520
+updated: 2026-09-14
+depends_on: [platform-registry, rpg-stats]
+uses: [surf-enchantment]
+tags: [rpg, items]
+---
+
+## Aufbau
+
+Ein Item besteht aus einer **Definition** (in der Registry, für alle gleich) und einer **Instanz** (im Inventar, mit eigenen Daten).
+
+| Definition | Instanz |
+| --- | --- |
+| Basis-Stats, Seltenheit, Typ | Aufwertung, Verzauberungen |
+| Fähigkeit, Rezept, Aussehen | Sterne, Zähler, Bindung |
+| Datenversion | Ersteller, Erstelldatum |
+
+Die Instanz speichert **nur** das, was von der Definition abweicht — Item-Key plus Abweichungen. Ändert sich später eine Basis-Zahl, gilt sie sofort für alle vorhandenen Exemplare. Das ist der Unterschied zwischen "Balancing-Änderung" und "Balancing-Änderung plus Migration über alle Inventare".
+
+## Seltenheiten
+
+Gewöhnlich → Ungewöhnlich → Selten → Episch → Legendär → Mythisch. Die Seltenheit ist nicht nur Farbe: Sie begrenzt Aufwertungsstufen, Verzauberungs-Slots und bestimmt, wie stark Sterne wirken.
+
+## Aufwertung
+
+- **Reforge** — ein zufälliger oder gewählter Zusatz auf das Item, gegen Währung neu würfelbar. Die wichtigste laufende Geldsenke im RPG-Strang.
+- **Sterne** — verstärken die Basiswerte, kosten Material aus Kampf-Content.
+- **Verzauberungen** — eigene, nicht die von Vanilla, mit Slot-Begrenzung nach Seltenheit.
+
+## Was schon da ist
+
+[surf-enchantment](https://github.com/SLNE-Development/surf-enchantment) deckt Verzauberungen und Item-Fähigkeiten schon ab — modulare Definition, aktive Effekte, Event-Handling, Hintergrundtasks. Damit entfallen die beiden Abschnitte *Verzauberungen* und *Fähigkeiten* als Neubau.
+
+Selbst zu bauen bleiben: Seltenheiten, Reforge, Sterne, Bindung und das Instanzdatenmodell oben — also alles, was mit Wert und Handelbarkeit zu tun hat.
+
+## Fähigkeiten
+
+Manche Items haben eine aktive Fähigkeit (Rechtsklick, Abklingzeit, Kosten). Das ist der Unterschied zwischen "besseres Schwert" und "Item, um das herum man baut". In V1 nur wenige, dafür gut gemachte.
+
+## Bindung
+
+Manche Items sind an den Spieler gebunden und nicht handelbar. Das ist das wichtigste Werkzeug gegen Wirtschaftsinflation — Belohnungen aus Progression bleiben beim Empfänger und drücken nicht den Marktpreis.
+
+## Speicherung
+
+Die Instanzdaten liegen in den Custom-Data des Items. Jede Instanz trägt eine Datenversion; beim Laden hebt eine Migrationskette sie auf den aktuellen Stand — siehe <Ref id="ops-migrations" />.
+
+<Note type="warning" title="Der teure Fehler">
+  Vollständige Stats in jedes Item zu kopieren wirkt einfach und macht jede spätere Balancing-Änderung
+  zu einer Massenmigration über alle Inventare, Lager und Auktionen. Nur Abweichungen speichern.
+</Note>

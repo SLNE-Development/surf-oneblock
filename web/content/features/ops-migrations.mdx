@@ -1,0 +1,43 @@
+---
+id: ops-migrations
+title: Migrationen & Datenversionen
+summary: Wie Spielerstände, Items und Definitionen Änderungen überleben.
+status: draft
+pillar: ops
+release: v1.x
+order: 730
+updated: 2026-09-13
+depends_on: [platform-profile, platform-registry]
+tags: [betrieb, persistenz]
+---
+
+## Drei Arten
+
+| Art | Wann | Wie |
+| --- | --- | --- |
+| Schema | Datenbankstruktur ändert sich | vor dem Deploy, abwärtskompatibel |
+| Profil | ein `ProfilePart` ändert sich | beim Laden, Kette von Schritten |
+| Item | Item-Instanzdaten ändern sich | beim Laden des Stacks |
+
+## Profil-Migration
+
+Jeder `ProfilePart` trägt eine Fassung. Beim Laden werden die registrierten Schritte der Reihe nach angewendet, bis die aktuelle erreicht ist. Migrationsschritte sind unveränderlich — einmal ausgeliefert, wird ein Schritt nie mehr geändert, weil es Profile gibt, die ihn schon durchlaufen haben und solche, die es noch nicht haben.
+
+## Item-Migration
+
+Items liegen überall: Inventare, Enderchests, Lager, Auktionen, Bazaar-Orders, Postfächer. Eine Migration über alle Bestände ist teuer und fehleranfällig. Deshalb: **beim Laden migrieren**, nicht im Bestand. Ein Item, das drei Jahre in einer Truhe lag, wird beim Herausnehmen aktuell.
+
+Das setzt voraus, dass Instanzdaten nur Abweichungen speichern — siehe <Ref id="rpg-items" />.
+
+## Entfernte Definitionen
+
+Der unangenehme Fall: Ein Item wird aus dem Content entfernt, existiert aber noch in Inventaren.
+
+Regel: **Definitionen werden nie gelöscht**, nur als `retired` markiert. Ein zurückgezogenes Item funktioniert weiter, ist aber nicht mehr herstellbar und nicht mehr handelbar. Löschen ist nur nach einer Umtauschaktion erlaubt, bei der Spieler es aktiv gegen etwas anderes tauschen.
+
+<Note type="error" title="Nicht verhandelbar">
+  Ein Item, das beim Laden verschwindet, ist aus Spielersicht Diebstahl — unabhängig davon, wie
+  begründet die Änderung war. Das ist die Art Vorfall, die einem Modus dauerhaft den Ruf kostet.
+</Note>
+
+<Open>Wie lange werden Insel-Snapshots für Rollbacks aufbewahrt? Sieben Tage sind üblich, kosten bei großen Inseln aber erheblich Speicher — siehe <Ref id="adr-007-persistence" />.</Open>
