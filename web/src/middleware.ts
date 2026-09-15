@@ -6,7 +6,14 @@ import { SESSION_COOKIE, verifySessionValue } from "@/lib/auth";
  * Alles ist gesperrt, außer der Login-Seite, dem Login-Endpunkt und
  * statischen Assets. Es gibt bewusst keine "öffentliche" Doku-Route.
  */
-const PUBLIC_PATHS = ["/login", "/api/login", "/api/logout", "/favicon.ico", "/robots.txt"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/login",
+  "/api/logout",
+  "/favicon.ico",
+  "/robots.txt",
+  "/surf-oneblock-logo.png",
+];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
