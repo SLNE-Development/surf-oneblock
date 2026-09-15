@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     template: "%s · surf-oneblock",
   },
   description: "Internes Design-Dokument für den OneBlock-Spielmodus.",
+  icons: { icon: "/surf-oneblock-logo.png" },
   robots: { index: false, follow: false },
 };
 
